@@ -1,8 +1,8 @@
-use self::vector::Vector;
+use self::vector::Vec3;
 
 pub mod vector;
 
-pub fn make_orthonormal_basis(a: Vector, b: Vector) -> (Vector, Vector, Vector) {
+pub fn make_orthonormal_basis(a: Vec3, b: Vec3) -> (Vec3, Vec3, Vec3) {
     let a = a.normalized();
     let c = a.cross(b);
     assert_ne!(

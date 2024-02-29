@@ -3,13 +3,15 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 use crate::precision::Real;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct Vector {
+pub struct Vec3 {
     pub x: Real,
     pub y: Real,
     pub z: Real,
 }
 
-impl Vector {
+impl Vec3 {
+    pub const ZERO: Self = Self::new(0.0, 0.0, 0.0);
+
     pub const fn new(x: Real, y: Real, z: Real) -> Self {
         Self { x, y, z }
     }
@@ -30,14 +32,6 @@ impl Vector {
         }
 
         self / sq_mag.sqrt()
-    }
-
-    pub fn add_scaled_vector(self, rhs: Self, scale: Real) -> Self {
-        Self {
-            x: self.x + rhs.x * scale,
-            y: self.y + rhs.y * scale,
-            z: self.z + rhs.z * scale,
-        }
     }
 
     pub fn dot(self, rhs: Self) -> Real {
@@ -61,7 +55,7 @@ impl Vector {
     }
 }
 
-impl Add for Vector {
+impl Add for Vec3 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -73,7 +67,7 @@ impl Add for Vector {
     }
 }
 
-impl AddAssign for Vector {
+impl AddAssign for Vec3 {
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
@@ -81,7 +75,7 @@ impl AddAssign for Vector {
     }
 }
 
-impl Sub for Vector {
+impl Sub for Vec3 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -93,7 +87,7 @@ impl Sub for Vector {
     }
 }
 
-impl SubAssign for Vector {
+impl SubAssign for Vec3 {
     fn sub_assign(&mut self, rhs: Self) {
         self.x -= rhs.x;
         self.y -= rhs.y;
@@ -101,7 +95,7 @@ impl SubAssign for Vector {
     }
 }
 
-impl Mul<Real> for Vector {
+impl Mul<Real> for Vec3 {
     type Output = Self;
 
     fn mul(self, scalar: Real) -> Self::Output {
@@ -113,7 +107,7 @@ impl Mul<Real> for Vector {
     }
 }
 
-impl MulAssign<Real> for Vector {
+impl MulAssign<Real> for Vec3 {
     fn mul_assign(&mut self, rhs: Real) {
         self.x *= rhs;
         self.y *= rhs;
@@ -121,7 +115,7 @@ impl MulAssign<Real> for Vector {
     }
 }
 
-impl Div<Real> for Vector {
+impl Div<Real> for Vec3 {
     type Output = Self;
 
     fn div(self, scalar: Real) -> Self::Output {
@@ -133,7 +127,7 @@ impl Div<Real> for Vector {
     }
 }
 
-impl DivAssign<Real> for Vector {
+impl DivAssign<Real> for Vec3 {
     fn div_assign(&mut self, rhs: Real) {
         self.x /= rhs;
         self.y /= rhs;
@@ -141,7 +135,7 @@ impl DivAssign<Real> for Vector {
     }
 }
 
-impl Neg for Vector {
+impl Neg for Vec3 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
