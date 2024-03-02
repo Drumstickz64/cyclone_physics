@@ -9,3 +9,6 @@ edition = "2021"
 
 [features]
 f64 = []
+
+[dev-dependencies]
+macroquad = "0.4.5"
