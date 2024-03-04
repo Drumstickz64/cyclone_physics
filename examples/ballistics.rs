@@ -7,15 +7,15 @@ const INITIAL_POS: CVec3 = CVec3::new(0.0, 1.5, 0.0);
 async fn main() {
     let mut particle = make_particle(ShotType::Pistol);
 
+    set_camera(&Camera3D {
+        position: vec3(-25.0, 8.0, 5.0),
+        up: Vec3::Y,
+        target: vec3(0.0, 5.0, 22.0),
+        ..Default::default()
+    });
+
     loop {
         clear_background(LIGHTGRAY);
-
-        set_camera(&Camera3D {
-            position: vec3(-25.0, 8.0, 5.0),
-            up: Vec3::Y,
-            target: vec3(0.0, 5.0, 22.0),
-            ..Default::default()
-        });
 
         if is_key_pressed(KeyCode::Q) {
             particle = make_particle(ShotType::Pistol);
