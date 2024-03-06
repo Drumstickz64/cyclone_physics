@@ -31,9 +31,9 @@ async fn main() {
 
         draw_sphere(
             vec3(
-                particle.position.x,
-                particle.position.y,
-                particle.position.z,
+                particle.position().x,
+                particle.position().y,
+                particle.position().z,
             ),
             1.0,
             None,
@@ -54,36 +54,27 @@ enum ShotType {
 
 fn make_particle(shot_type: ShotType) -> Particle {
     match shot_type {
-        ShotType::Pistol => Particle {
-            position: INITIAL_POS,
-            velocity: CVec3::new(0.0, 0.0, 35.0),
-            acceleration: CVec3::new(0.0, -1.0, 0.0),
-            damping: 0.99,
-            inverse_mass: 1.0 / 2.0,
-        },
+        ShotType::Pistol => Particle::new(2.0)
+            .with_position(INITIAL_POS)
+            .with_velocity(CVec3::new(0.0, 0.0, 35.0))
+            .with_acceleration(CVec3::new(0.0, -1.0, 0.0))
+            .with_damping(0.99),
 
-        ShotType::Artillery => Particle {
-            position: INITIAL_POS,
-            velocity: CVec3::new(0.0, 30.0, 40.0),
-            acceleration: CVec3::new(0.0, -20.0, 0.0),
-            damping: 0.99,
-            inverse_mass: 1.0 / 200.0,
-        },
+        ShotType::Artillery => Particle::new(200.0)
+            .with_position(INITIAL_POS)
+            .with_velocity(CVec3::new(0.0, 30.0, 40.0))
+            .with_acceleration(CVec3::new(0.0, -20.0, 0.0))
+            .with_damping(0.99),
 
-        ShotType::FireBall => Particle {
-            position: INITIAL_POS,
-            velocity: CVec3::new(0.0, 0.0, 10.0),
-            acceleration: CVec3::new(0.0, 0.6, 0.0),
-            damping: 0.9,
-            inverse_mass: 1.0,
-        },
-
-        ShotType::Laser => Particle {
-            position: INITIAL_POS,
-            velocity: CVec3::new(0.0, 0.0, 100.0),
-            acceleration: CVec3::ZERO,
-            damping: 0.99,
-            inverse_mass: 1.0 / 0.1,
-        },
+        ShotType::FireBall => Particle::new(1.0)
+            .with_position(INITIAL_POS)
+            .with_velocity(CVec3::new(0.0, 0.0, 10.0))
+            .with_acceleration(CVec3::new(0.0, 0.6, 0.0))
+            .with_damping(0.9),
+        ShotType::Laser => Particle::new(0.1)
+            .with_position(INITIAL_POS)
+            .with_velocity(CVec3::new(0.0, 0.0, 100.0))
+            .with_acceleration(CVec3::ZERO)
+            .with_damping(0.99),
     }
 }

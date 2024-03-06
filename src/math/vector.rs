@@ -11,9 +11,21 @@ pub struct Vec3 {
 
 impl Vec3 {
     pub const ZERO: Self = Self::new(0.0, 0.0, 0.0);
+    pub const X: Self = Self::new(1.0, 0.0, 0.0);
+    pub const Y: Self = Self::new(0.0, 1.0, 0.0);
+    pub const Z: Self = Self::new(0.0, 0.0, 1.0);
+    pub const NEG_X: Self = Self::new(-1.0, 0.0, 0.0);
+    pub const NEG_Y: Self = Self::new(0.0, -1.0, 0.0);
+    pub const NEG_Z: Self = Self::new(0.0, 0.0, -1.0);
+    pub const ONE: Self = Self::new(1.0, 1.0, 1.0);
+    pub const NEG_ONE: Self = Self::new(-1.0, -1.0, -1.0);
 
     pub const fn new(x: Real, y: Real, z: Real) -> Self {
         Self { x, y, z }
+    }
+
+    pub fn splat(v: Real) -> Self {
+        Self { x: v, y: v, z: v }
     }
 
     pub fn magnitude(self) -> Real {
