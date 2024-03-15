@@ -119,6 +119,14 @@ impl Mul<Real> for Vec3 {
     }
 }
 
+impl Mul<Vec3> for Real {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        rhs * self
+    }
+}
+
 impl MulAssign<Real> for Vec3 {
     fn mul_assign(&mut self, rhs: Real) {
         self.x *= rhs;
@@ -136,6 +144,14 @@ impl Div<Real> for Vec3 {
             y: self.y / scalar,
             z: self.z / scalar,
         }
+    }
+}
+
+impl Div<Vec3> for Real {
+    type Output = Vec3;
+
+    fn div(self, rhs: Vec3) -> Self::Output {
+        rhs / self
     }
 }
 

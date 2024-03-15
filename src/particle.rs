@@ -1,4 +1,13 @@
+use slotmap::{new_key_type, SlotMap};
+
 use crate::{math::vector::Vec3, precision::Real};
+
+new_key_type! {
+    pub struct ParticleKey;
+}
+
+// TODO: change into proper type
+pub type ParticleSet = SlotMap<ParticleKey, Particle>;
 
 #[derive(Debug, Clone)]
 pub struct Particle {
@@ -68,6 +77,10 @@ impl Particle {
         self.velocity = self.velocity * self.damping.powf(duration) + resulting_acc * duration;
 
         self.clear_accumulator();
+    }
+
+    pub fn add_force(&mut self, force: Vec3) {
+        self.force_accumelator += force;
     }
 
     pub fn kinetic_energy(&self) -> Real {
