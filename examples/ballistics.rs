@@ -1,4 +1,4 @@
-use cyclone_physics::{math::vector::Vec3 as CVec3, Particle};
+use cyclone_physics::{math::vector::Vec3 as CVec3, particle::Particle};
 use macroquad::prelude::*;
 
 const INITIAL_POS: CVec3 = CVec3::new(0.0, 1.5, 0.0);
