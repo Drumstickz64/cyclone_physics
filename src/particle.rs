@@ -16,7 +16,7 @@ pub struct Particle {
     acceleration: Vec3,
     damping: Real,
     inverse_mass: Real,
-    force_accumelator: Vec3,
+    force_accum: Vec3,
 }
 
 impl Particle {
@@ -34,7 +34,7 @@ impl Particle {
             acceleration: Vec3::ZERO,
             damping: 0.99,
             inverse_mass,
-            force_accumelator: Vec3::ZERO,
+            force_accum: Vec3::ZERO,
         }
     }
 
@@ -54,6 +54,7 @@ impl Particle {
     }
 
     pub fn with_damping(mut self, damping: Real) -> Self {
+        assert!((0.0..=1.0).contains(&damping));
         self.damping = damping;
         self
     }
@@ -72,7 +73,7 @@ impl Particle {
 
         self.position += self.velocity * duration;
 
-        let resulting_acc = self.acceleration;
+        let resulting_acc = self.acceleration + self.force_accum * self.inverse_mass;
 
         self.velocity = self.velocity * self.damping.powf(duration) + resulting_acc * duration;
 
@@ -80,7 +81,7 @@ impl Particle {
     }
 
     pub fn add_force(&mut self, force: Vec3) {
-        self.force_accumelator += force;
+        self.force_accum += force;
     }
 
     pub fn kinetic_energy(&self) -> Real {
@@ -145,6 +146,6 @@ impl Particle {
     }
 
     pub fn clear_accumulator(&mut self) {
-        self.force_accumelator = Vec3::ZERO;
+        self.force_accum = Vec3::ZERO;
     }
 }
