@@ -1,5 +1,5 @@
 use cyclone_physics::{
-    math::vector::Vec3 as CVec3,
+    math::vector::Vec3,
     particle::{Particle, ParticleSet},
     pfgen::{ForceGeneratorSet, ParticleSpring},
     pipeline::ParticlePipeline,
@@ -9,7 +9,7 @@ use macroquad::prelude::*;
 
 const PLAYER_MASS: f32 = 15.0;
 const MOUSE_MASS: f32 = 5.0;
-const GRAVITY: CVec3 = CVec3::new(0.0, 250.0, 0.0);
+const GRAVITY: Vec3 = Vec3::new(0.0, 250.0, 0.0);
 const PLAYER_DAMPING: f32 = 0.8;
 const SPRING_CONSTANT: f32 = 25.0;
 const SPRING_REST_LENGTH: f32 = 1.0;
@@ -83,12 +83,12 @@ async fn main() {
     }
 }
 
-fn initial_player_pos() -> CVec3 {
-    CVec3::new(screen_width() / 2.0, screen_height() / 1.5, 0.0)
+fn initial_player_pos() -> Vec3 {
+    Vec3::new(screen_width() / 2.0, screen_height() / 1.5, 0.0)
 }
 
-fn mouse_pos_vec() -> CVec3 {
+fn mouse_pos_vec() -> Vec3 {
     let (mouse_x, mouse_y) = mouse_position();
 
-    CVec3::new(mouse_x, mouse_y, 0.0)
+    Vec3::new(mouse_x, mouse_y, 0.0)
 }

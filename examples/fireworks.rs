@@ -1,5 +1,5 @@
-use cyclone_physics::{math::vector::Vec3 as CVec3, particle::Particle, precision::Real};
-use macroquad::prelude::*;
+use cyclone_physics::{math::vector::Vec3, particle::Particle, precision::Real};
+use macroquad::prelude::{Vec3 as MVec3, *};
 
 const MAX_FIREWORKS: usize = 16384;
 const SIZE: Real = 1.5;
@@ -10,9 +10,9 @@ async fn main() {
     let rules = firework_rules();
 
     set_camera(&Camera3D {
-        position: Vec3::new(0.0, 4.0, 25.0),
-        target: Vec3::new(0.0, 4.0, 0.0),
-        up: Vec3::Y,
+        position: MVec3::new(0.0, 4.0, 25.0),
+        target: MVec3::new(0.0, 4.0, 0.0),
+        up: MVec3::Y,
         ..Default::default()
     });
 
@@ -23,62 +23,35 @@ async fn main() {
                     &mut state,
                     &rules[rand::gen_range(0, 9)],
                     random_initial_position(),
-                    CVec3::ZERO,
+                    Vec3::ZERO,
                 ),
-                KeyCode::Key1 => create_firework(
-                    &mut state,
-                    &rules[0],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key2 => create_firework(
-                    &mut state,
-                    &rules[1],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key3 => create_firework(
-                    &mut state,
-                    &rules[2],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key4 => create_firework(
-                    &mut state,
-                    &rules[3],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key5 => create_firework(
-                    &mut state,
-                    &rules[4],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key6 => create_firework(
-                    &mut state,
-                    &rules[5],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key7 => create_firework(
-                    &mut state,
-                    &rules[6],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key8 => create_firework(
-                    &mut state,
-                    &rules[7],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
-                KeyCode::Key9 => create_firework(
-                    &mut state,
-                    &rules[8],
-                    random_initial_position(),
-                    CVec3::ZERO,
-                ),
+                KeyCode::Key1 => {
+                    create_firework(&mut state, &rules[0], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key2 => {
+                    create_firework(&mut state, &rules[1], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key3 => {
+                    create_firework(&mut state, &rules[2], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key4 => {
+                    create_firework(&mut state, &rules[3], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key5 => {
+                    create_firework(&mut state, &rules[4], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key6 => {
+                    create_firework(&mut state, &rules[5], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key7 => {
+                    create_firework(&mut state, &rules[6], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key8 => {
+                    create_firework(&mut state, &rules[7], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key9 => {
+                    create_firework(&mut state, &rules[8], random_initial_position(), Vec3::ZERO)
+                }
                 _ => {}
             }
         }
@@ -94,8 +67,8 @@ async fn main() {
 fn create_firework(
     state: &mut State,
     rule: &FireworkRule,
-    initial_position: CVec3,
-    initial_velocity: CVec3,
+    initial_position: Vec3,
+    initial_velocity: Vec3,
 ) {
     state.fireworks[state.next_firework] = rule.create(initial_position, initial_velocity);
     state.next_firework = (state.next_firework + 1) % MAX_FIREWORKS;
@@ -150,7 +123,7 @@ fn draw(state: &State) {
         };
 
         let pos = firework.particle.position();
-        draw_cube(cvec_to_vec(pos), Vec3::new(SIZE, SIZE, 0.01), None, color)
+        draw_cube(vec_to_mvec(pos), MVec3::new(SIZE, SIZE, 0.01), None, color)
     }
 }
 
@@ -201,14 +174,14 @@ struct FireworkRule {
     kind: ParticleKind,
     min_age: Real,
     max_age: Real,
-    min_velocity: CVec3,
-    max_velocity: CVec3,
+    min_velocity: Vec3,
+    max_velocity: Vec3,
     damping: Real,
     payloads: Vec<Payload>,
 }
 
 impl FireworkRule {
-    pub fn create(&self, initial_position: CVec3, initial_velocity: CVec3) -> Firework {
+    pub fn create(&self, initial_position: Vec3, initial_velocity: Vec3) -> Firework {
         let age = rand::gen_range(self.min_age, self.max_age);
         let position = initial_position;
         let velocity = initial_velocity + random_vector(self.min_velocity, self.max_velocity);
@@ -237,8 +210,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 1,
             min_age: 0.5,
             max_age: 1.4,
-            min_velocity: CVec3::new(-5.0, 25.0, -5.0),
-            max_velocity: CVec3::new(5.0, 28.0, 5.0),
+            min_velocity: Vec3::new(-5.0, 25.0, -5.0),
+            max_velocity: Vec3::new(5.0, 28.0, 5.0),
             damping: 0.1,
             payloads: vec![Payload { kind: 3, count: 5 }, Payload { kind: 5, count: 5 }],
         },
@@ -246,8 +219,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 2,
             min_age: 0.5,
             max_age: 1.0,
-            min_velocity: CVec3::new(-5.0, 10.0, -5.0),
-            max_velocity: CVec3::new(5.0, 20.0, 5.0),
+            min_velocity: Vec3::new(-5.0, 10.0, -5.0),
+            max_velocity: Vec3::new(5.0, 20.0, 5.0),
             damping: 0.8,
             payloads: vec![Payload { kind: 4, count: 2 }],
         },
@@ -255,8 +228,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 3,
             min_age: 0.5,
             max_age: 1.5,
-            min_velocity: CVec3::new(-5.0, -5.0, -5.0),
-            max_velocity: CVec3::new(5.0, 5.0, 5.0),
+            min_velocity: Vec3::new(-5.0, -5.0, -5.0),
+            max_velocity: Vec3::new(5.0, 5.0, 5.0),
             damping: 0.1,
             payloads: Vec::new(),
         },
@@ -264,8 +237,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 4,
             min_age: 0.25,
             max_age: 0.5,
-            min_velocity: CVec3::new(-20.0, 5.0, -5.0),
-            max_velocity: CVec3::new(20.0, 5.0, 5.0),
+            min_velocity: Vec3::new(-20.0, 5.0, -5.0),
+            max_velocity: Vec3::new(20.0, 5.0, 5.0),
             damping: 0.2,
             payloads: Vec::new(),
         },
@@ -273,8 +246,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 5,
             min_age: 0.5,
             max_age: 1.0,
-            min_velocity: CVec3::new(-20.0, 2.0, -5.0),
-            max_velocity: CVec3::new(20.0, 18.0, 5.0),
+            min_velocity: Vec3::new(-20.0, 2.0, -5.0),
+            max_velocity: Vec3::new(20.0, 18.0, 5.0),
             damping: 0.01,
             payloads: vec![Payload { kind: 3, count: 5 }],
         },
@@ -282,8 +255,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 6,
             min_age: 3.0,
             max_age: 5.0,
-            min_velocity: CVec3::new(-5.0, -5.0, -5.0),
-            max_velocity: CVec3::new(5.0, 10.0, 5.0),
+            min_velocity: Vec3::new(-5.0, -5.0, -5.0),
+            max_velocity: Vec3::new(5.0, 10.0, 5.0),
             damping: 0.95,
             payloads: Vec::new(),
         },
@@ -291,8 +264,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 7,
             min_age: 4.0,
             max_age: 5.0,
-            min_velocity: CVec3::new(-5.0, 50.0, -5.0),
-            max_velocity: CVec3::new(5.0, 60.0, 5.0),
+            min_velocity: Vec3::new(-5.0, 50.0, -5.0),
+            max_velocity: Vec3::new(5.0, 60.0, 5.0),
             damping: 0.01,
             payloads: vec![Payload { kind: 8, count: 10 }],
         },
@@ -300,8 +273,8 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 8,
             min_age: 0.25,
             max_age: 0.5,
-            min_velocity: CVec3::NEG_ONE,
-            max_velocity: CVec3::ONE,
+            min_velocity: Vec3::NEG_ONE,
+            max_velocity: Vec3::ONE,
             damping: 0.01,
             payloads: Vec::new(),
         },
@@ -309,28 +282,28 @@ fn firework_rules() -> [FireworkRule; 9] {
             kind: 9,
             min_age: 3.0,
             max_age: 5.0,
-            min_velocity: CVec3::new(-15.0, 10.0, -5.0),
-            max_velocity: CVec3::new(15.0, 15.0, 5.0),
+            min_velocity: Vec3::new(-15.0, 10.0, -5.0),
+            max_velocity: Vec3::new(15.0, 15.0, 5.0),
             damping: 0.95,
             payloads: Vec::new(),
         },
     ]
 }
 
-fn random_vector(start: CVec3, end: CVec3) -> CVec3 {
-    CVec3::new(
+fn random_vector(start: Vec3, end: Vec3) -> Vec3 {
+    Vec3::new(
         rand::gen_range(start.x, end.x),
         rand::gen_range(start.y, end.y),
         rand::gen_range(start.z, end.z),
     )
 }
 
-fn random_initial_position() -> CVec3 {
+fn random_initial_position() -> Vec3 {
     let x = rand::gen_range(-3, 3);
 
-    CVec3::new(5.0 * x as Real, 0.0, 0.0)
+    Vec3::new(5.0 * x as Real, 0.0, 0.0)
 }
 
-fn cvec_to_vec(v: CVec3) -> Vec3 {
-    Vec3::new(v.x, v.y, v.z)
+fn vec_to_mvec(v: Vec3) -> MVec3 {
+    MVec3::new(v.x, v.y, v.z)
 }

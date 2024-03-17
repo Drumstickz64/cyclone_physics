@@ -1,7 +1,7 @@
-use cyclone_physics::{math::vector::Vec3 as CVec3, particle::Particle};
-use macroquad::prelude::*;
+use cyclone_physics::{math::vector::Vec3, particle::Particle};
+use macroquad::prelude::{Vec3 as MVec3, *};
 
-const INITIAL_POS: CVec3 = CVec3::new(0.0, 1.5, 0.0);
+const INITIAL_POS: Vec3 = Vec3::new(0.0, 1.5, 0.0);
 
 #[macroquad::main("Ballistics")]
 async fn main() {
@@ -9,7 +9,7 @@ async fn main() {
 
     set_camera(&Camera3D {
         position: vec3(-25.0, 8.0, 5.0),
-        up: Vec3::Y,
+        up: MVec3::Y,
         target: vec3(0.0, 5.0, 22.0),
         ..Default::default()
     });
@@ -56,25 +56,25 @@ fn make_particle(shot_type: ShotType) -> Particle {
     match shot_type {
         ShotType::Pistol => Particle::new(2.0)
             .with_position(INITIAL_POS)
-            .with_velocity(CVec3::new(0.0, 0.0, 35.0))
-            .with_acceleration(CVec3::new(0.0, -1.0, 0.0))
+            .with_velocity(Vec3::new(0.0, 0.0, 35.0))
+            .with_acceleration(Vec3::new(0.0, -1.0, 0.0))
             .with_damping(0.99),
 
         ShotType::Artillery => Particle::new(200.0)
             .with_position(INITIAL_POS)
-            .with_velocity(CVec3::new(0.0, 30.0, 40.0))
-            .with_acceleration(CVec3::new(0.0, -20.0, 0.0))
+            .with_velocity(Vec3::new(0.0, 30.0, 40.0))
+            .with_acceleration(Vec3::new(0.0, -20.0, 0.0))
             .with_damping(0.99),
 
         ShotType::FireBall => Particle::new(1.0)
             .with_position(INITIAL_POS)
-            .with_velocity(CVec3::new(0.0, 0.0, 10.0))
-            .with_acceleration(CVec3::new(0.0, 0.6, 0.0))
+            .with_velocity(Vec3::new(0.0, 0.0, 10.0))
+            .with_acceleration(Vec3::new(0.0, 0.6, 0.0))
             .with_damping(0.9),
         ShotType::Laser => Particle::new(0.1)
             .with_position(INITIAL_POS)
-            .with_velocity(CVec3::new(0.0, 0.0, 100.0))
-            .with_acceleration(CVec3::ZERO)
+            .with_velocity(Vec3::new(0.0, 0.0, 100.0))
+            .with_acceleration(Vec3::ZERO)
             .with_damping(0.99),
     }
 }
