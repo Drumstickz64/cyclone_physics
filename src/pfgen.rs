@@ -1,4 +1,4 @@
-use std::ops::{Index, IndexMut};
+use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
 
 use slotmap::{new_key_type, SlotMap};
 
@@ -151,6 +151,7 @@ new_key_type! {
     pub struct ForceGeneratorHandle;
 }
 
+#[derive(IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
 pub struct ForceGeneratorSet {
     inner: SlotMap<ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
 }
@@ -246,20 +247,6 @@ impl ForceGeneratorSet {
 
     pub fn drain(&mut self) -> Drain {
         Drain(self.inner.drain())
-    }
-}
-
-impl Index<ForceGeneratorHandle> for ForceGeneratorSet {
-    type Output = dyn ParticleForceGenerator;
-
-    fn index(&self, index: ForceGeneratorHandle) -> &Self::Output {
-        self.inner[index].as_ref()
-    }
-}
-
-impl IndexMut<ForceGeneratorHandle> for ForceGeneratorSet {
-    fn index_mut(&mut self, index: ForceGeneratorHandle) -> &mut Self::Output {
-        self.inner[index].as_mut()
     }
 }
 

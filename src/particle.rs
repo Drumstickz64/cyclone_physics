@@ -1,6 +1,6 @@
-use std::ops::{Index, IndexMut};
-
 use slotmap::{new_key_type, SlotMap};
+
+use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
 
 use crate::{math::vector::Vec3, precision::Real};
 
@@ -149,7 +149,7 @@ new_key_type! {
     pub struct ParticleHandle;
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
 pub struct ParticleSet {
     inner: SlotMap<ParticleHandle, Particle>,
 }
@@ -236,20 +236,6 @@ impl ParticleSet {
 
     pub fn drain(&mut self) -> Drain {
         Drain(self.inner.drain())
-    }
-}
-
-impl Index<ParticleHandle> for ParticleSet {
-    type Output = Particle;
-
-    fn index(&self, index: ParticleHandle) -> &Self::Output {
-        &self.inner[index]
-    }
-}
-
-impl IndexMut<ParticleHandle> for ParticleSet {
-    fn index_mut(&mut self, index: ParticleHandle) -> &mut Self::Output {
-        &mut self.inner[index]
     }
 }
 
