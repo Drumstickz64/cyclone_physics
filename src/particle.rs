@@ -1,13 +1,8 @@
+use std::ops::{Index, IndexMut};
+
 use slotmap::{new_key_type, SlotMap};
 
 use crate::{math::vector::Vec3, precision::Real};
-
-new_key_type! {
-    pub struct ParticleKey;
-}
-
-// TODO: change into proper type
-pub type ParticleSet = SlotMap<ParticleKey, Particle>;
 
 #[derive(Debug, Clone)]
 pub struct Particle {
@@ -149,3 +144,189 @@ impl Particle {
         self.force_accum = Vec3::ZERO;
     }
 }
+
+new_key_type! {
+    pub struct ParticleHandle;
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ParticleSet {
+    inner: SlotMap<ParticleHandle, Particle>,
+}
+
+impl ParticleSet {
+    pub fn new() -> Self {
+        Self {
+            inner: SlotMap::with_key(),
+        }
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: SlotMap::with_capacity_and_key(capacity),
+        }
+    }
+
+    pub fn insert(&mut self, value: Particle) -> ParticleHandle {
+        self.inner.insert(value)
+    }
+
+    pub fn remove(&mut self, key: ParticleHandle) -> Option<Particle> {
+        self.inner.remove(key)
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear()
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn get(&self, key: ParticleHandle) -> Option<&Particle> {
+        self.inner.get(key)
+    }
+
+    pub fn get_mut(&mut self, key: ParticleHandle) -> Option<&mut Particle> {
+        self.inner.get_mut(key)
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    pub fn particles(&self) -> Particles<'_> {
+        Particles(self.inner.values())
+    }
+
+    pub fn particles_mut(&mut self) -> ParticlesMut<'_> {
+        ParticlesMut(self.inner.values_mut())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn handles(&self) -> Handles {
+        Handles(self.inner.keys())
+    }
+
+    pub fn get_disjoint_mut<const N: usize>(
+        &mut self,
+        keys: [ParticleHandle; N],
+    ) -> Option<[&mut Particle; N]> {
+        self.inner.get_disjoint_mut(keys)
+    }
+
+    pub fn contains_handle(&self, key: ParticleHandle) -> bool {
+        self.inner.contains_key(key)
+    }
+
+    pub fn iter(&self) -> Iter {
+        Iter(self.inner.iter())
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut {
+        IterMut(self.inner.iter_mut())
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.inner.reserve(additional)
+    }
+
+    pub fn drain(&mut self) -> Drain {
+        Drain(self.inner.drain())
+    }
+}
+
+impl Index<ParticleHandle> for ParticleSet {
+    type Output = Particle;
+
+    fn index(&self, index: ParticleHandle) -> &Self::Output {
+        &self.inner[index]
+    }
+}
+
+impl IndexMut<ParticleHandle> for ParticleSet {
+    fn index_mut(&mut self, index: ParticleHandle) -> &mut Self::Output {
+        &mut self.inner[index]
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Particles<'a>(slotmap::basic::Values<'a, ParticleHandle, Particle>);
+
+impl<'a> Iterator for Particles<'a> {
+    type Item = &'a Particle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> ExactSizeIterator for Particles<'a> {}
+
+#[derive(Debug)]
+pub struct ParticlesMut<'a>(slotmap::basic::ValuesMut<'a, ParticleHandle, Particle>);
+
+impl<'a> Iterator for ParticlesMut<'a> {
+    type Item = &'a mut Particle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> ExactSizeIterator for ParticlesMut<'a> {}
+
+#[derive(Debug, Clone)]
+pub struct Iter<'a>(slotmap::basic::Iter<'a, ParticleHandle, Particle>);
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = (ParticleHandle, &'a Particle);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> ExactSizeIterator for Iter<'a> {}
+
+#[derive(Debug)]
+pub struct IterMut<'a>(slotmap::basic::IterMut<'a, ParticleHandle, Particle>);
+
+impl<'a> Iterator for IterMut<'a> {
+    type Item = (ParticleHandle, &'a mut Particle);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> ExactSizeIterator for IterMut<'a> {}
+
+#[derive(Debug)]
+pub struct Drain<'a>(slotmap::basic::Drain<'a, ParticleHandle, Particle>);
+
+impl<'a> Iterator for Drain<'a> {
+    type Item = (ParticleHandle, Particle);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> ExactSizeIterator for Drain<'a> {}
+
+#[derive(Debug, Clone)]
+pub struct Handles<'a>(slotmap::basic::Keys<'a, ParticleHandle, Particle>);
+
+impl<'a> Iterator for Handles<'a> {
+    type Item = ParticleHandle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> ExactSizeIterator for Handles<'a> {}

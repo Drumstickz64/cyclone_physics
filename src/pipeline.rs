@@ -1,6 +1,6 @@
 use crate::{
-    particle::{ParticleKey, ParticleSet},
-    pfgen::{ForceGeneratorKey, ForceGeneratorSet, ParticleForceRegistration},
+    particle::{ParticleHandle, ParticleSet},
+    pfgen::{ForceGeneratorHandle, ForceGeneratorSet, ParticleForceRegistration},
     precision::Real,
 };
 
@@ -26,17 +26,17 @@ impl ParticlePipeline {
             fg.update_force(particles, reg.particle, duration);
         }
 
-        for particle in particles.values_mut() {
+        for particle in particles.particles_mut() {
             particle.integrate(duration);
         }
     }
 
-    pub fn register_force(&mut self, particle: ParticleKey, fg: ForceGeneratorKey) {
+    pub fn register_force(&mut self, particle: ParticleHandle, fg: ForceGeneratorHandle) {
         self.force_registry
             .push(ParticleForceRegistration { particle, fg })
     }
 
-    pub fn unregister_force(&mut self, particle: ParticleKey, fg: ForceGeneratorKey) -> bool {
+    pub fn unregister_force(&mut self, particle: ParticleHandle, fg: ForceGeneratorHandle) -> bool {
         let Some(i) = self
             .force_registry
             .iter()

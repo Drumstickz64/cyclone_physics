@@ -22,8 +22,8 @@ const SPRING_COLOR: Color = GREEN;
 
 #[macroquad::main("Springs")]
 async fn main() {
-    let mut particles = ParticleSet::with_key();
-    let mut fgs = ForceGeneratorSet::with_key();
+    let mut particles = ParticleSet::new();
+    let mut fgs = ForceGeneratorSet::new();
 
     let player_particle = particles.insert(
         Particle::new(PLAYER_MASS)
