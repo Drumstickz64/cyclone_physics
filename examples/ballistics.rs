@@ -31,9 +31,9 @@ async fn main() {
 
         draw_sphere(
             vec3(
-                particle.position().x,
-                particle.position().y,
-                particle.position().z,
+                particle.position.x,
+                particle.position.y,
+                particle.position.z,
             ),
             1.0,
             None,

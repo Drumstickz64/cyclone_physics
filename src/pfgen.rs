@@ -36,9 +36,9 @@ impl ParticleForceGenerator for ParticleSpring {
         particle_key: ParticleHandle,
         _duration: Real,
     ) {
-        let other_pos = particles[self.other].position();
+        let other_pos = particles[self.other].position;
         let particle = &mut particles[particle_key];
-        let delta = particle.position() - other_pos;
+        let delta = particle.position - other_pos;
 
         let force =
             -self.spring_constant * (delta.magnitude() - self.rest_length) * delta.normalized();
@@ -61,7 +61,7 @@ impl ParticleForceGenerator for ParticleAnchoredSpring {
         _duration: Real,
     ) {
         let particle = &mut particles[particle_key];
-        let delta = particle.position() - self.anchor;
+        let delta = particle.position - self.anchor;
 
         let force =
             -self.spring_constant * (delta.magnitude() - self.rest_length) * delta.normalized();
@@ -83,9 +83,9 @@ impl ParticleForceGenerator for ParticleBungee {
         particle_key: ParticleHandle,
         _duration: Real,
     ) {
-        let other_pos = particles[self.other].position();
+        let other_pos = particles[self.other].position;
         let particle = &mut particles[particle_key];
-        let delta = particle.position() - other_pos;
+        let delta = particle.position - other_pos;
         let delta_mag = delta.magnitude();
 
         if delta_mag <= self.rest_length {
@@ -129,7 +129,7 @@ impl ParticleForceGenerator for ParticleBuoyancy {
         _duration: Real,
     ) {
         let particle = &mut particles[particle];
-        let depth = particle.position().y;
+        let depth = particle.position.y;
 
         if depth >= self.liquid_height + self.max_depth {
             return;

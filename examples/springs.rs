@@ -52,9 +52,9 @@ async fn main() {
         pipeline.step(&mut particles, &mut fgs, duration);
 
         let mouse_pos = mouse_pos_vec();
-        let player_pos = particles[player_particle].position();
+        let player_pos = particles[player_particle].position;
 
-        particles[mouse_particle].set_position(mouse_pos);
+        particles[mouse_particle].position = mouse_pos;
 
         draw_line(
             player_pos.x,

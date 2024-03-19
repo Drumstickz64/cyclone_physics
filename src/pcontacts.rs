@@ -135,8 +135,8 @@ impl ParticleContactResolver {
         let mut new_sep_velocity = -contact_data.restitution * seperating_velocity;
 
         let acc_caused_velocity = match particle_b.as_ref() {
-            Some(particle_b) => particle_a.acceleration() - particle_b.acceleration(),
-            None => particle_a.acceleration(),
+            Some(particle_b) => particle_a.acceleration - particle_b.acceleration,
+            None => particle_a.acceleration,
         };
 
         let acc_caused_sep_velocity = acc_caused_velocity.dot(contact_data.normal) * duration;
@@ -151,8 +151,8 @@ impl ParticleContactResolver {
         let delta_velocity = new_sep_velocity - seperating_velocity;
 
         let total_inv_mass = match particle_b.as_ref() {
-            Some(particle_b) => particle_a.inverse_mass() + particle_b.inverse_mass(),
-            None => particle_a.inverse_mass(),
+            Some(particle_b) => particle_a.inverse_mass + particle_b.inverse_mass,
+            None => particle_a.inverse_mass,
         };
 
         if total_inv_mass <= 0.0 {
@@ -162,13 +162,10 @@ impl ParticleContactResolver {
         let impulse = delta_velocity / total_inv_mass;
         let impulse_per_inv_mass = impulse * contact_data.normal;
 
-        particle_a
-            .set_velocity(particle_a.velocity() + impulse_per_inv_mass * particle_a.inverse_mass());
+        particle_a.velocity += impulse_per_inv_mass * particle_a.inverse_mass;
 
         if let Some(particle_b) = particle_b {
-            particle_b.set_velocity(
-                particle_b.velocity() + impulse_per_inv_mass * particle_b.inverse_mass(),
-            );
+            particle_b.velocity += impulse_per_inv_mass * particle_b.inverse_mass;
         }
     }
 
@@ -183,8 +180,8 @@ impl ParticleContactResolver {
         }
 
         let total_inv_mass = match particle_b.as_ref() {
-            Some(particle_b) => particle_a.inverse_mass() + particle_b.inverse_mass(),
-            None => particle_a.inverse_mass(),
+            Some(particle_b) => particle_a.inverse_mass + particle_b.inverse_mass,
+            None => particle_a.inverse_mass,
         };
 
         if total_inv_mass <= 0.0 {
@@ -192,15 +189,15 @@ impl ParticleContactResolver {
         }
 
         let move_per_inv_mass = contact_data.normal * (contact_data.penetration / total_inv_mass);
-        contact_data.particle_a_movement = move_per_inv_mass * particle_a.inverse_mass();
+        contact_data.particle_a_movement = move_per_inv_mass * particle_a.inverse_mass;
         contact_data.particle_b_movement = match particle_b.as_mut() {
-            Some(particle_b) => move_per_inv_mass * particle_b.inverse_mass(),
+            Some(particle_b) => move_per_inv_mass * particle_b.inverse_mass,
             None => Vec3::ZERO,
         };
 
-        particle_a.set_position(particle_a.position() + contact_data.particle_a_movement);
+        particle_a.position += contact_data.particle_a_movement;
         if let Some(particle_b) = particle_b {
-            particle_b.set_position(particle_b.position() + contact_data.particle_b_movement);
+            particle_b.position += contact_data.particle_b_movement;
         }
     }
 
@@ -210,8 +207,8 @@ impl ParticleContactResolver {
         contact_normal: Vec3,
     ) -> Real {
         let relative_velocity = match particle_b {
-            Some(particle_b) => particle_a.velocity() - particle_b.velocity(),
-            None => particle_a.velocity(),
+            Some(particle_b) => particle_a.velocity - particle_b.velocity,
+            None => particle_a.velocity,
         };
 
         relative_velocity.dot(contact_normal)

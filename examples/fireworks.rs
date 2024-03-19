@@ -18,41 +18,70 @@ async fn main() {
 
     loop {
         for key in get_keys_down().iter() {
-            match key {
-                KeyCode::Key0 => create_firework(
-                    &mut state,
-                    &rules[rand::gen_range(0, 9)],
-                    random_initial_position(),
-                    Vec3::ZERO,
-                ),
-                KeyCode::Key1 => {
-                    create_firework(&mut state, &rules[0], random_initial_position(), Vec3::ZERO)
+            for _ in 0..10 {
+                match key {
+                    KeyCode::Key0 => create_firework(
+                        &mut state,
+                        &rules[rand::gen_range(0, 9)],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key1 => create_firework(
+                        &mut state,
+                        &rules[0],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key2 => create_firework(
+                        &mut state,
+                        &rules[1],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key3 => create_firework(
+                        &mut state,
+                        &rules[2],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key4 => create_firework(
+                        &mut state,
+                        &rules[3],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key5 => create_firework(
+                        &mut state,
+                        &rules[4],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key6 => create_firework(
+                        &mut state,
+                        &rules[5],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key7 => create_firework(
+                        &mut state,
+                        &rules[6],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key8 => create_firework(
+                        &mut state,
+                        &rules[7],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    KeyCode::Key9 => create_firework(
+                        &mut state,
+                        &rules[8],
+                        random_initial_position(),
+                        Vec3::ZERO,
+                    ),
+                    _ => {}
                 }
-                KeyCode::Key2 => {
-                    create_firework(&mut state, &rules[1], random_initial_position(), Vec3::ZERO)
-                }
-                KeyCode::Key3 => {
-                    create_firework(&mut state, &rules[2], random_initial_position(), Vec3::ZERO)
-                }
-                KeyCode::Key4 => {
-                    create_firework(&mut state, &rules[3], random_initial_position(), Vec3::ZERO)
-                }
-                KeyCode::Key5 => {
-                    create_firework(&mut state, &rules[4], random_initial_position(), Vec3::ZERO)
-                }
-                KeyCode::Key6 => {
-                    create_firework(&mut state, &rules[5], random_initial_position(), Vec3::ZERO)
-                }
-                KeyCode::Key7 => {
-                    create_firework(&mut state, &rules[6], random_initial_position(), Vec3::ZERO)
-                }
-                KeyCode::Key8 => {
-                    create_firework(&mut state, &rules[7], random_initial_position(), Vec3::ZERO)
-                }
-                KeyCode::Key9 => {
-                    create_firework(&mut state, &rules[8], random_initial_position(), Vec3::ZERO)
-                }
-                _ => {}
             }
         }
 
@@ -88,8 +117,8 @@ fn update(state: &mut State, rules: &[FireworkRule]) {
 
         let has_expired = firework.update(duration);
         if has_expired {
-            let initial_position = firework.particle.position();
-            let initial_velocity = firework.particle.velocity();
+            let initial_position = firework.particle.position;
+            let initial_velocity = firework.particle.velocity;
 
             let payloads = &rules[state.fireworks[i].kind - 1].payloads;
             state.fireworks[i].kind = 0;
@@ -122,7 +151,7 @@ fn draw(state: &State) {
             _ => unreachable!(),
         };
 
-        let pos = firework.particle.position();
+        let pos = firework.particle.position;
         draw_cube(vec_to_mvec(pos), MVec3::new(SIZE, SIZE, 0.01), None, color)
     }
 }
@@ -166,7 +195,7 @@ impl Firework {
 
         self.age -= duration;
 
-        self.age < 0.0 || self.particle.position().y < 0.0
+        self.age < 0.0 || self.particle.position.y < 0.0
     }
 }
 
