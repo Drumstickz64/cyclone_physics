@@ -4,11 +4,11 @@ use crate::{
     precision::Real,
 };
 
-pub struct ParticlePipeline {
+pub struct ParticlePhysicsSystem {
     force_registry: Vec<ParticleForceRegistration>,
 }
 
-impl ParticlePipeline {
+impl ParticlePhysicsSystem {
     pub fn new() -> Self {
         Self {
             force_registry: Vec::new(),
@@ -51,7 +51,7 @@ impl ParticlePipeline {
     }
 }
 
-impl Default for ParticlePipeline {
+impl Default for ParticlePhysicsSystem {
     fn default() -> Self {
         Self::new()
     }

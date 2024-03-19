@@ -2,7 +2,7 @@ use cyclone_physics::{
     math::vector::Vec3,
     particle::{Particle, ParticleSet},
     pfgen::{ForceGeneratorSet, ParticleSpring},
-    pipeline::ParticlePipeline,
+    pphysics_system::ParticlePhysicsSystem,
 };
 
 use macroquad::prelude::*;
@@ -40,7 +40,7 @@ async fn main() {
         rest_length: SPRING_REST_LENGTH,
     }));
 
-    let mut pipeline = ParticlePipeline::new();
+    let mut pipeline = ParticlePhysicsSystem::new();
 
     pipeline.register_force(player_particle, spring);
 
