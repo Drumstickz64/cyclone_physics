@@ -4,20 +4,36 @@ use crate::{
     precision::Real,
 };
 
-#[derive(Debug, Clone)]
-pub(crate) struct ParticleContact {
-    particle_a: ParticleHandle,
-    particle_b: Option<ParticleHandle>,
-    data: ParticleContactData,
+pub trait ParticleContactGenerator {
+    fn create_contact(&self, particles: &ParticleSet) -> Option<ParticleContact>;
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ParticleContactData {
-    restitution: Real,
-    normal: Vec3,
-    penetration: Real,
-    particle_a_movement: Vec3,
-    particle_b_movement: Vec3,
+pub struct ParticleContact {
+    pub particle_a: ParticleHandle,
+    pub particle_b: Option<ParticleHandle>,
+    pub data: ParticleContactData,
+}
+
+#[derive(Debug, Clone)]
+pub struct ParticleContactData {
+    pub restitution: Real,
+    pub normal: Vec3,
+    pub penetration: Real,
+    pub particle_a_movement: Vec3,
+    pub particle_b_movement: Vec3,
+}
+
+impl ParticleContactData {
+    pub fn new(restitution: Real, normal: Vec3, penetration: Real) -> Self {
+        Self {
+            restitution,
+            normal,
+            penetration,
+            particle_a_movement: Vec3::ZERO,
+            particle_b_movement: Vec3::ZERO,
+        }
+    }
 }
 
 impl ParticleContact {

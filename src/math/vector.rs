@@ -63,6 +63,18 @@ impl Vec3 {
         self / sq_mag.sqrt()
     }
 
+    pub fn distance_to(self, other: Self) -> Real {
+        (other - self).magnitude()
+    }
+
+    pub fn distance_to_squared(self, other: Self) -> Real {
+        (other - self).squared_magnitude()
+    }
+
+    pub fn direction_to(self, other: Self) -> Self {
+        (other - self).normalized()
+    }
+
     pub fn dot(self, rhs: Self) -> Real {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
