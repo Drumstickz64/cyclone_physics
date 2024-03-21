@@ -191,8 +191,20 @@ impl ForceGeneratorSet {
         self.inner.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.inner.reserve(additional)
+    }
+
     pub fn get(&self, key: ForceGeneratorHandle) -> Option<&dyn ParticleForceGenerator> {
-        self.inner.get(key).map(|fg| fg.as_ref())
+        self.inner.get(key).map(|fg| &**fg)
     }
 
     pub fn get_mut(
@@ -202,24 +214,18 @@ impl ForceGeneratorSet {
         self.inner.get_mut(key)
     }
 
-    pub fn capacity(&self) -> usize {
-        self.inner.capacity()
+    pub fn force_generators(&self) -> impl Iterator<Item = &dyn ParticleForceGenerator> {
+        self.inner.values().map(|fg| fg.as_ref())
     }
 
-    pub fn force_generators(&self) -> ForceGenerators<'_> {
-        ForceGenerators(self.inner.values())
+    pub fn force_generators_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Box<dyn ParticleForceGenerator>> {
+        self.inner.values_mut()
     }
 
-    pub fn force_generators_mut(&mut self) -> ForceGeneratorsMut<'_> {
-        ForceGeneratorsMut(self.inner.values_mut())
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
-    pub fn handles(&self) -> Handles {
-        Handles(self.inner.keys())
+    pub fn handles(&self) -> impl Iterator<Item = ForceGeneratorHandle> + '_ {
+        self.inner.keys()
     }
 
     pub fn get_disjoint_mut<const N: usize>(
@@ -233,106 +239,21 @@ impl ForceGeneratorSet {
         self.inner.contains_key(key)
     }
 
-    pub fn iter(&self) -> Iter {
-        Iter(self.inner.iter())
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (ForceGeneratorHandle, &Box<dyn ParticleForceGenerator>)> {
+        self.inner.iter()
     }
 
-    pub fn iter_mut(&mut self) -> IterMut {
-        IterMut(self.inner.iter_mut())
+    pub fn iter_mut(
+        &mut self,
+    ) -> impl Iterator<Item = (ForceGeneratorHandle, &mut Box<dyn ParticleForceGenerator>)> {
+        self.inner.iter_mut()
     }
 
-    pub fn reserve(&mut self, additional: usize) {
-        self.inner.reserve(additional)
-    }
-
-    pub fn drain(&mut self) -> Drain {
-        Drain(self.inner.drain())
-    }
-}
-
-pub struct ForceGenerators<'a>(
-    slotmap::basic::Values<'a, ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
-);
-
-impl<'a> Iterator for ForceGenerators<'a> {
-    type Item = &'a dyn ParticleForceGenerator;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|fg| fg.as_ref())
+    pub fn drain(
+        &mut self,
+    ) -> impl Iterator<Item = (ForceGeneratorHandle, Box<dyn ParticleForceGenerator>)> + '_ {
+        self.inner.drain()
     }
 }
-
-impl<'a> ExactSizeIterator for ForceGenerators<'a> {}
-
-pub struct ForceGeneratorsMut<'a>(
-    slotmap::basic::ValuesMut<'a, ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
-);
-
-impl<'a> Iterator for ForceGeneratorsMut<'a> {
-    type Item = &'a mut Box<dyn ParticleForceGenerator>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-
-impl<'a> ExactSizeIterator for ForceGeneratorsMut<'a> {}
-
-pub struct Iter<'a>(
-    slotmap::basic::Iter<'a, ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
-);
-
-impl<'a> Iterator for Iter<'a> {
-    type Item = (ForceGeneratorHandle, &'a dyn ParticleForceGenerator);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(handle, fg)| (handle, fg.as_ref()))
-    }
-}
-
-impl<'a> ExactSizeIterator for Iter<'a> {}
-
-pub struct IterMut<'a>(
-    slotmap::basic::IterMut<'a, ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
-);
-
-impl<'a> Iterator for IterMut<'a> {
-    type Item = (
-        ForceGeneratorHandle,
-        &'a mut Box<dyn ParticleForceGenerator>,
-    );
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-
-impl<'a> ExactSizeIterator for IterMut<'a> {}
-
-pub struct Drain<'a>(
-    slotmap::basic::Drain<'a, ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
-);
-
-impl<'a> Iterator for Drain<'a> {
-    type Item = (ForceGeneratorHandle, Box<dyn ParticleForceGenerator>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-
-impl<'a> ExactSizeIterator for Drain<'a> {}
-
-pub struct Handles<'a>(
-    slotmap::basic::Keys<'a, ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
-);
-
-impl<'a> Iterator for Handles<'a> {
-    type Item = ForceGeneratorHandle;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-
-impl<'a> ExactSizeIterator for Handles<'a> {}
