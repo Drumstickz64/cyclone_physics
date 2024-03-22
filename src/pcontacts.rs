@@ -1,3 +1,7 @@
+use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
+
+use slotmap::{new_key_type, SlotMap};
+
 use crate::{
     math::vector::Vec3,
     particle::{Particle, ParticleHandle, ParticleSet},
@@ -5,17 +9,17 @@ use crate::{
 };
 
 pub trait ParticleContactGenerator {
-    fn create_contact(&self, particles: &ParticleSet) -> Option<ParticleContact>;
+    fn add_contacts(&self, contacts: &mut [ParticleContact], particles: &ParticleSet) -> usize;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ParticleContact {
     pub particle_a: ParticleHandle,
     pub particle_b: Option<ParticleHandle>,
     pub data: ParticleContactData,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ParticleContactData {
     pub restitution: Real,
     pub normal: Vec3,
@@ -60,29 +64,32 @@ impl ParticleContact {
 
 #[derive(Debug, Clone)]
 pub(crate) struct ParticleContactResolver {
-    contacts: Vec<ParticleContact>,
-    iterations: u32,
-    iterations_used: u32,
+    pub iterations: u32,
+    pub iterations_used: u32,
 }
 
 impl ParticleContactResolver {
     pub fn new(iterations: u32) -> Self {
         Self {
-            contacts: Vec::new(),
             iterations,
             iterations_used: 0,
         }
     }
 
-    pub fn resolve(&mut self, particles: &mut ParticleSet, duration: Real) {
+    pub fn resolve(
+        &mut self,
+        contacts: &mut [ParticleContact],
+        particles: &mut ParticleSet,
+        duration: Real,
+    ) {
         self.iterations_used = 0;
 
         while self.iterations_used < self.iterations {
-            let num_contacts = self.contacts.len();
+            let num_contacts = contacts.len();
             let mut max = Real::MAX;
             let mut max_idx = num_contacts;
 
-            for (i, contact) in self.contacts.drain(..).enumerate() {
+            for (i, contact) in contacts.iter_mut().enumerate() {
                 let sep_vel = Self::calculate_seperating_velocity(
                     &particles[contact.particle_a],
                     contact.particle_b.map(|particle| &particles[particle]),
@@ -103,13 +110,18 @@ impl ParticleContactResolver {
                         .get_disjoint_mut([contact.particle_a, particle_b])
                         .unwrap();
 
-                    Self::resolve_contact(particle_a, Some(particle_b), duration, contact.data);
+                    Self::resolve_contact(
+                        particle_a,
+                        Some(particle_b),
+                        duration,
+                        &mut contact.data,
+                    );
                 } else {
                     Self::resolve_contact(
                         &mut particles[contact.particle_a],
                         None,
                         duration,
-                        contact.data,
+                        &mut contact.data,
                     );
                 }
 
@@ -122,15 +134,15 @@ impl ParticleContactResolver {
         particle_a: &mut Particle,
         mut particle_b: Option<&mut Particle>,
         duration: Real,
-        mut contact_data: ParticleContactData,
+        contact_data: &mut ParticleContactData,
     ) {
         Self::resolve_velocity(
             particle_a,
             particle_b.as_deref_mut(),
             duration,
-            &contact_data,
+            contact_data,
         );
-        Self::resolve_interpenetration(particle_a, particle_b, duration, &mut contact_data);
+        Self::resolve_interpenetration(particle_a, particle_b, duration, contact_data);
     }
 
     fn resolve_velocity(
@@ -228,5 +240,125 @@ impl ParticleContactResolver {
         };
 
         relative_velocity.dot(contact_normal)
+    }
+}
+
+new_key_type! {
+    pub struct ContactGeneratorHandle;
+}
+
+#[derive(IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
+pub struct ContactGeneratorSet {
+    inner: SlotMap<ContactGeneratorHandle, Box<dyn ParticleContactGenerator>>,
+}
+
+impl Default for ContactGeneratorSet {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ContactGeneratorSet {
+    pub fn new() -> Self {
+        Self {
+            inner: SlotMap::with_key(),
+        }
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: SlotMap::with_capacity_and_key(capacity),
+        }
+    }
+
+    pub fn insert(&mut self, value: Box<dyn ParticleContactGenerator>) -> ContactGeneratorHandle {
+        self.inner.insert(value)
+    }
+
+    pub fn remove(
+        &mut self,
+        key: ContactGeneratorHandle,
+    ) -> Option<Box<dyn ParticleContactGenerator>> {
+        self.inner.remove(key)
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear()
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.inner.reserve(additional)
+    }
+
+    pub fn get(&self, key: ContactGeneratorHandle) -> Option<&dyn ParticleContactGenerator> {
+        self.inner.get(key).map(|fg| &**fg)
+    }
+
+    pub fn get_mut(
+        &mut self,
+        key: ContactGeneratorHandle,
+    ) -> Option<&mut Box<dyn ParticleContactGenerator>> {
+        self.inner.get_mut(key)
+    }
+
+    pub fn generators(&self) -> impl Iterator<Item = &dyn ParticleContactGenerator> {
+        self.inner.values().map(|fg| fg.as_ref())
+    }
+
+    pub fn generators_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Box<dyn ParticleContactGenerator>> {
+        self.inner.values_mut()
+    }
+
+    pub fn handles(&self) -> impl Iterator<Item = ContactGeneratorHandle> + '_ {
+        self.inner.keys()
+    }
+
+    pub fn get_disjoint_mut<const N: usize>(
+        &mut self,
+        keys: [ContactGeneratorHandle; N],
+    ) -> Option<[&mut Box<dyn ParticleContactGenerator>; N]> {
+        self.inner.get_disjoint_mut(keys)
+    }
+
+    pub fn contains(&self, key: ContactGeneratorHandle) -> bool {
+        self.inner.contains_key(key)
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (ContactGeneratorHandle, &Box<dyn ParticleContactGenerator>)> {
+        self.inner.iter()
+    }
+
+    pub fn iter_mut(
+        &mut self,
+    ) -> impl Iterator<
+        Item = (
+            ContactGeneratorHandle,
+            &mut Box<dyn ParticleContactGenerator>,
+        ),
+    > {
+        self.inner.iter_mut()
+    }
+
+    pub fn drain(
+        &mut self,
+    ) -> impl Iterator<Item = (ContactGeneratorHandle, Box<dyn ParticleContactGenerator>)> + '_
+    {
+        self.inner.drain()
     }
 }

@@ -64,7 +64,7 @@ impl Particle {
             return;
         }
 
-        assert_ne!(duration, 0.0);
+        debug_assert_ne!(duration, 0.0);
 
         self.position += self.velocity * duration;
 
@@ -100,7 +100,7 @@ impl Particle {
         self.inverse_mass = mass.recip();
     }
 
-    fn clear_accumulator(&mut self) {
+    pub(crate) fn clear_accumulator(&mut self) {
         self.force_accum = Vec3::ZERO;
     }
 }
@@ -178,7 +178,7 @@ impl ParticleSet {
         self.inner.get_disjoint_mut(keys)
     }
 
-    pub fn contains_handle(&self, key: ParticleHandle) -> bool {
+    pub fn contains(&self, key: ParticleHandle) -> bool {
         self.inner.contains_key(key)
     }
 

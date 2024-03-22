@@ -7,4 +7,4 @@ mod plinks;
 pub mod pphysics_system;
 pub mod precision;
 
-pub use pcontacts::ParticleContactGenerator;
+pub use pcontacts::{ContactGeneratorHandle, ContactGeneratorSet, ParticleContactGenerator};

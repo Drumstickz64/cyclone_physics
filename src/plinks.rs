@@ -15,23 +15,25 @@ pub struct ParticleCable {
 }
 
 impl ParticleContactGenerator for ParticleCable {
-    fn create_contact(&self, particles: &ParticleSet) -> Option<ParticleContact> {
+    fn add_contacts(&self, contacts: &mut [ParticleContact], particles: &ParticleSet) -> usize {
         let position_a = particles[self.particle_a].position;
         let position_b = particles[self.particle_b].position;
 
         let length = position_a.distance_to(position_b);
         if length < self.max_length {
-            return None;
+            return 0;
         }
 
         let normal = position_a.direction_to(position_b);
         let penetration = length - self.max_length;
 
-        Some(ParticleContact {
+        contacts[0] = ParticleContact {
             particle_a: self.particle_a,
             particle_b: Some(self.particle_b),
             data: ParticleContactData::new(self.restitution, normal, penetration),
-        })
+        };
+
+        1
     }
 }
 
@@ -43,13 +45,13 @@ pub struct ParticleRod {
 }
 
 impl ParticleContactGenerator for ParticleRod {
-    fn create_contact(&self, particles: &ParticleSet) -> Option<ParticleContact> {
+    fn add_contacts(&self, contacts: &mut [ParticleContact], particles: &ParticleSet) -> usize {
         let position_a = particles[self.particle_a].position;
         let position_b = particles[self.particle_b].position;
 
         let curr_length = position_a.distance_to(position_b);
         if curr_length == self.length {
-            return None;
+            return 0;
         }
 
         let normal = if curr_length > self.length {
@@ -61,11 +63,13 @@ impl ParticleContactGenerator for ParticleRod {
         let penetration = (curr_length - self.length).abs();
         let restitution = 0.0;
 
-        Some(ParticleContact {
+        contacts[0] = ParticleContact {
             particle_a: self.particle_a,
             particle_b: Some(self.particle_b),
             data: ParticleContactData::new(restitution, normal, penetration),
-        })
+        };
+
+        1
     }
 }
 #[derive(Debug, Clone)]
@@ -76,19 +80,21 @@ pub struct ParticleGroundCollider {
 }
 
 impl ParticleContactGenerator for ParticleGroundCollider {
-    fn create_contact(&self, particles: &ParticleSet) -> Option<ParticleContact> {
+    fn add_contacts(&self, contacts: &mut [ParticleContact], particles: &ParticleSet) -> usize {
         let position = particles[self.particle].position;
         if position.y > self.particle_radius {
-            return None;
+            return 0;
         }
 
         let normal = Vec3::Y;
         let penetration = position.y - self.particle_radius;
 
-        Some(ParticleContact {
+        contacts[0] = ParticleContact {
             particle_a: self.particle,
             particle_b: None,
             data: ParticleContactData::new(self.restitution, normal, penetration),
-        })
+        };
+
+        1
     }
 }

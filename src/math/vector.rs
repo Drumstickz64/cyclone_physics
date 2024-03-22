@@ -19,6 +19,7 @@ use crate::precision::Real;
     DivAssign,
     Mul,
     MulAssign,
+    Default,
 )]
 pub struct Vec3 {
     pub x: Real,

@@ -214,13 +214,11 @@ impl ForceGeneratorSet {
         self.inner.get_mut(key)
     }
 
-    pub fn force_generators(&self) -> impl Iterator<Item = &dyn ParticleForceGenerator> {
+    pub fn generators(&self) -> impl Iterator<Item = &dyn ParticleForceGenerator> {
         self.inner.values().map(|fg| fg.as_ref())
     }
 
-    pub fn force_generators_mut(
-        &mut self,
-    ) -> impl Iterator<Item = &mut Box<dyn ParticleForceGenerator>> {
+    pub fn generators_mut(&mut self) -> impl Iterator<Item = &mut Box<dyn ParticleForceGenerator>> {
         self.inner.values_mut()
     }
 
@@ -235,7 +233,7 @@ impl ForceGeneratorSet {
         self.inner.get_disjoint_mut(keys)
     }
 
-    pub fn contains_handle(&self, key: ForceGeneratorHandle) -> bool {
+    pub fn contains(&self, key: ForceGeneratorHandle) -> bool {
         self.inner.contains_key(key)
     }
 

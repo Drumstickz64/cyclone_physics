@@ -40,7 +40,7 @@ async fn main() {
         rest_length: SPRING_REST_LENGTH,
     }));
 
-    let mut pipeline = ParticlePhysicsSystem::new();
+    let mut pipeline = ParticlePhysicsSystem::new(0, 0);
 
     pipeline.register_force(player_particle, spring);
 

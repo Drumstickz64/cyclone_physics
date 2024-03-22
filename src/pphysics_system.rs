@@ -1,17 +1,27 @@
 use crate::{
     particle::{ParticleHandle, ParticleSet},
+    pcontacts::{ParticleContact, ParticleContactResolver},
     pfgen::{ForceGeneratorHandle, ForceGeneratorSet, ParticleForceRegistration},
     precision::Real,
+    ContactGeneratorSet,
 };
 
 pub struct ParticlePhysicsSystem {
     force_registry: Vec<ParticleForceRegistration>,
+    resolver: ParticleContactResolver,
+    contacts: Vec<ParticleContact>,
+    contact_generators: ContactGeneratorSet,
+    calculate_iterations: bool,
 }
 
 impl ParticlePhysicsSystem {
-    pub fn new() -> Self {
+    pub fn new(max_contacts: usize, iterations: u32) -> Self {
         Self {
             force_registry: Vec::new(),
+            resolver: ParticleContactResolver::new(iterations),
+            contacts: vec![ParticleContact::default(); max_contacts],
+            contact_generators: ContactGeneratorSet::new(),
+            calculate_iterations: iterations == 0,
         }
     }
 
@@ -29,6 +39,16 @@ impl ParticlePhysicsSystem {
         for particle in particles.particles_mut() {
             particle.integrate(duration);
         }
+
+        let used_contacts = self.generate_contacts(particles);
+
+        if used_contacts > 0 {
+            if self.calculate_iterations {
+                self.resolver.iterations = (used_contacts * 2) as u32;
+            }
+            self.resolver
+                .resolve(&mut self.contacts[..used_contacts], particles, duration)
+        }
     }
 
     pub fn register_force(&mut self, particle: ParticleHandle, fg: ForceGeneratorHandle) {
@@ -36,6 +56,7 @@ impl ParticlePhysicsSystem {
             .push(ParticleForceRegistration { particle, fg })
     }
 
+    // we return bool instead of Option because we don't want to expose ParticleForceRegistration
     pub fn unregister_force(&mut self, particle: ParticleHandle, fg: ForceGeneratorHandle) -> bool {
         let Some(i) = self
             .force_registry
@@ -49,10 +70,26 @@ impl ParticlePhysicsSystem {
 
         true
     }
-}
 
-impl Default for ParticlePhysicsSystem {
-    fn default() -> Self {
-        Self::new()
+    pub fn start_frame(&mut self, particles: &mut ParticleSet) {
+        for particle in particles.particles_mut() {
+            particle.clear_accumulator();
+        }
+    }
+
+    pub fn generate_contacts(&mut self, particles: &ParticleSet) -> usize {
+        let max_contacts = self.contacts.len();
+        let mut contacts = &mut self.contacts[..];
+
+        for contact_generator in self.contact_generators.generators() {
+            let used = contact_generator.add_contacts(contacts, particles);
+            contacts = &mut contacts[used..];
+            if contacts.is_empty() {
+                break;
+            }
+        }
+
+        // return the number of contacts used
+        max_contacts - contacts.len()
     }
 }
