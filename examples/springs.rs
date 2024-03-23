@@ -3,16 +3,17 @@ use cyclone_physics::{
     particle::{Particle, ParticleSet},
     pfgen::{ForceGeneratorSet, ParticleSpring},
     pphysics_system::ParticlePhysicsSystem,
+    ContactGeneratorSet,
 };
 
 use macroquad::prelude::*;
 
-const PLAYER_MASS: f32 = 15.0;
+const PLAYER_MASS: f32 = 10.0;
 const MOUSE_MASS: f32 = 5.0;
 const GRAVITY: Vec3 = Vec3::new(0.0, 250.0, 0.0);
-const PLAYER_DAMPING: f32 = 0.8;
+const PLAYER_DAMPING: f32 = 0.75;
 const SPRING_CONSTANT: f32 = 25.0;
-const SPRING_REST_LENGTH: f32 = 1.0;
+const SPRING_REST_LENGTH: f32 = 150.0;
 const SPRING_THICKNESS: f32 = 3.0;
 const MOUSE_PARTICLE_RADIUS: f32 = 25.0;
 const PLAYER_PARTICLE_RADIUS: f32 = 35.0;
@@ -24,6 +25,7 @@ const SPRING_COLOR: Color = GREEN;
 async fn main() {
     let mut particles = ParticleSet::new();
     let mut fgs = ForceGeneratorSet::new();
+    let mut cgs = ContactGeneratorSet::new(); // Not used in this demo
 
     let player_particle = particles.insert(
         Particle::new(PLAYER_MASS)
@@ -49,7 +51,7 @@ async fn main() {
 
         let duration = get_frame_time();
 
-        pipeline.step(&mut particles, &mut fgs, duration);
+        pipeline.step(&mut particles, &mut fgs, &mut cgs, duration);
 
         let mouse_pos = mouse_pos_vec();
         let player_pos = particles[player_particle].position;

@@ -10,7 +10,6 @@ pub struct ParticlePhysicsSystem {
     force_registry: Vec<ParticleForceRegistration>,
     resolver: ParticleContactResolver,
     contacts: Vec<ParticleContact>,
-    contact_generators: ContactGeneratorSet,
     calculate_iterations: bool,
 }
 
@@ -20,7 +19,6 @@ impl ParticlePhysicsSystem {
             force_registry: Vec::new(),
             resolver: ParticleContactResolver::new(iterations),
             contacts: vec![ParticleContact::default(); max_contacts],
-            contact_generators: ContactGeneratorSet::new(),
             calculate_iterations: iterations == 0,
         }
     }
@@ -29,6 +27,7 @@ impl ParticlePhysicsSystem {
         &mut self,
         particles: &mut ParticleSet,
         fgs: &mut ForceGeneratorSet,
+        cgs: &mut ContactGeneratorSet,
         duration: Real,
     ) {
         for reg in self.force_registry.iter().copied() {
@@ -40,7 +39,7 @@ impl ParticlePhysicsSystem {
             particle.integrate(duration);
         }
 
-        let used_contacts = self.generate_contacts(particles);
+        let used_contacts = self.generate_contacts(cgs, particles);
 
         if used_contacts > 0 {
             if self.calculate_iterations {
@@ -77,11 +76,15 @@ impl ParticlePhysicsSystem {
         }
     }
 
-    pub fn generate_contacts(&mut self, particles: &ParticleSet) -> usize {
+    pub fn generate_contacts(
+        &mut self,
+        cgs: &mut ContactGeneratorSet,
+        particles: &ParticleSet,
+    ) -> usize {
         let max_contacts = self.contacts.len();
         let mut contacts = &mut self.contacts[..];
 
-        for contact_generator in self.contact_generators.generators() {
+        for contact_generator in cgs.generators() {
             let used = contact_generator.add_contacts(contacts, particles);
             contacts = &mut contacts[used..];
             if contacts.is_empty() {
