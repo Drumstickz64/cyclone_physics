@@ -86,13 +86,15 @@ impl ParticleForceGenerator for ParticleBungee {
         let other_pos = particles[self.other].position;
         let particle = &mut particles[particle_key];
         let delta = particle.position - other_pos;
-        let delta_mag = delta.magnitude();
+        let delta_squared_magnitude = delta.squared_magnitude();
 
-        if delta_mag <= self.rest_length {
+        if delta_squared_magnitude <= self.rest_length * self.rest_length {
             return;
         }
 
-        let force = -self.spring_constant * (-self.rest_length) * delta.normalized();
+        let force = -self.spring_constant
+            * (delta_squared_magnitude.sqrt() - self.rest_length)
+            * delta.normalized();
 
         particle.add_force(force);
     }
