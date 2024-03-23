@@ -1,9 +1,9 @@
 use cyclone_physics::{
     math::vector::Vec3,
     particle::{Particle, ParticleSet},
+    pcontacts::ContactGeneratorSet,
     pfgen::{ForceGeneratorSet, ParticleSpring},
     pphysics_system::ParticlePhysicsSystem,
-    ContactGeneratorSet,
 };
 
 use macroquad::prelude::*;
@@ -42,7 +42,7 @@ async fn main() {
         rest_length: SPRING_REST_LENGTH,
     }));
 
-    let mut pipeline = ParticlePhysicsSystem::new(0, 0);
+    let mut pipeline = ParticlePhysicsSystem::new(1024, 0);
 
     pipeline.register_force(player_particle, spring);
 
@@ -50,6 +50,8 @@ async fn main() {
         clear_background(BLACK);
 
         let duration = get_frame_time();
+
+        pipeline.start_frame(&mut particles);
 
         pipeline.step(&mut particles, &mut fgs, &mut cgs, duration);
 

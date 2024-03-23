@@ -1,9 +1,8 @@
 use crate::{
     particle::{ParticleHandle, ParticleSet},
-    pcontacts::{ParticleContact, ParticleContactResolver},
+    pcontacts::{ContactGeneratorSet, ParticleContact, ParticleContactResolver},
     pfgen::{ForceGeneratorHandle, ForceGeneratorSet, ParticleForceRegistration},
     precision::Real,
-    ContactGeneratorSet,
 };
 
 pub struct ParticlePhysicsSystem {

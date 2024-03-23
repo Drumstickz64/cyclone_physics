@@ -93,6 +93,43 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'springs'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=springs",
+                    "--package=cyclone_physics"
+                ],
+                "filter": {
+                    "name": "springs",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'springs'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=springs",
+                    "--package=cyclone_physics"
+                ],
+                "filter": {
+                    "name": "springs",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

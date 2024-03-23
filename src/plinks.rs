@@ -1,9 +1,8 @@
 use crate::{
     math::vector::Vec3,
     particle::{ParticleHandle, ParticleSet},
-    pcontacts::{ParticleContact, ParticleContactData},
+    pcontacts::{ParticleContact, ParticleContactData, ParticleContactGenerator},
     precision::Real,
-    ParticleContactGenerator,
 };
 
 #[derive(Debug, Clone)]
