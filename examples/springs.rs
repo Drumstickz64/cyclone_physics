@@ -1,15 +1,13 @@
 use cyclone_physics::{
     math::vector::Vec3,
     particle::{Particle, ParticleSet},
-    pcontacts::ContactGeneratorSet,
-    pfgen::{ForceGeneratorSet, ParticleSpring},
-    pphysics_system::ParticlePhysicsSystem,
+    pfgen::{ParticleAnchoredSpring, ParticleForceGenerator},
+    ppipeline::ParticlePipeline,
 };
 
 use macroquad::prelude::*;
 
 const PLAYER_MASS: f32 = 10.0;
-const MOUSE_MASS: f32 = 5.0;
 const GRAVITY: Vec3 = Vec3::new(0.0, 250.0, 0.0);
 const PLAYER_DAMPING: f32 = 0.75;
 const SPRING_CONSTANT: f32 = 25.0;
@@ -24,8 +22,6 @@ const SPRING_COLOR: Color = GREEN;
 #[macroquad::main("Springs")]
 async fn main() {
     let mut particles = ParticleSet::new();
-    let mut fgs = ForceGeneratorSet::new();
-    let mut cgs = ContactGeneratorSet::new(); // Not used in this demo
 
     let player_particle = particles.insert(
         Particle::new(PLAYER_MASS)
@@ -34,31 +30,29 @@ async fn main() {
             .with_damping(PLAYER_DAMPING),
     );
 
-    let mouse_particle = particles.insert(Particle::new(MOUSE_MASS).with_position(mouse_pos_vec()));
-
-    let spring = fgs.insert(Box::new(ParticleSpring {
-        other: mouse_particle,
+    let mut spring = ParticleAnchoredSpring {
+        target: player_particle,
+        anchor: mouse_pos_vec(),
         spring_constant: SPRING_CONSTANT,
         rest_length: SPRING_REST_LENGTH,
-    }));
+    };
 
-    let mut pipeline = ParticlePhysicsSystem::new(1024, 0);
-
-    pipeline.register_force(player_particle, spring);
+    let mut pipeline = ParticlePipeline::new(1024, 0);
 
     loop {
         clear_background(BLACK);
 
         let duration = get_frame_time();
+        let mouse_pos = mouse_pos_vec();
 
         pipeline.start_frame(&mut particles);
 
-        pipeline.step(&mut particles, &mut fgs, &mut cgs, duration);
+        spring.anchor = mouse_pos;
+        spring.update_forces(&mut particles, duration);
 
-        let mouse_pos = mouse_pos_vec();
+        pipeline.step(&mut particles, duration);
+
         let player_pos = particles[player_particle].position;
-
-        particles[mouse_particle].position = mouse_pos;
 
         draw_line(
             player_pos.x,

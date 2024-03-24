@@ -87,7 +87,7 @@ impl ParticleContactGenerator for ParticleGroundCollider {
         }
 
         let normal = Vec3::Y;
-        let penetration = position.y - self.particle_radius;
+        let penetration = self.particle_radius - position.y;
 
         contacts[0] = ParticleContact {
             particle_a: self.particle,

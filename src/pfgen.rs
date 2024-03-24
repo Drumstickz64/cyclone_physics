@@ -1,66 +1,56 @@
+use std::collections::HashSet;
+
 use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
 
 use slotmap::{new_key_type, SlotMap};
 
 use crate::{
     math::vector::Vec3,
-    particle::{ParticleHandle, ParticleSet},
+    particle::{Particle, ParticleHandle, ParticleSet},
     precision::Real,
 };
 
 pub trait ParticleForceGenerator {
-    fn update_force(
-        &mut self,
-        particles: &mut ParticleSet,
-        particle: ParticleHandle,
-        duration: Real,
-    );
+    fn update_forces(&self, particles: &mut ParticleSet, duration: Real);
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct ParticleForceRegistration {
-    pub particle: ParticleHandle,
-    pub fg: ForceGeneratorHandle,
+pub trait ParticleTargetedForceGenerator {
+    fn update_force(&self, target: &mut Particle, duration: Real);
 }
 
 pub struct ParticleSpring {
+    pub target: ParticleHandle,
     pub other: ParticleHandle,
     pub spring_constant: Real,
     pub rest_length: Real,
 }
 
 impl ParticleForceGenerator for ParticleSpring {
-    fn update_force(
-        &mut self,
-        particles: &mut ParticleSet,
-        particle_key: ParticleHandle,
-        _duration: Real,
-    ) {
-        let other_pos = particles[self.other].position;
-        let particle = &mut particles[particle_key];
-        let delta = particle.position - other_pos;
+    fn update_forces(&self, particles: &mut ParticleSet, _duration: Real) {
+        let [particle, other] = particles
+            .get_disjoint_mut([self.target, self.other])
+            .unwrap();
+
+        let delta = particle.position - other.position;
 
         let force =
             -self.spring_constant * (delta.magnitude() - self.rest_length) * delta.normalized();
 
         particle.add_force(force);
+        other.add_force(-force);
     }
 }
 
 pub struct ParticleAnchoredSpring {
+    pub target: ParticleHandle,
     pub anchor: Vec3,
     pub spring_constant: Real,
     pub rest_length: Real,
 }
 
 impl ParticleForceGenerator for ParticleAnchoredSpring {
-    fn update_force(
-        &mut self,
-        particles: &mut ParticleSet,
-        particle_key: ParticleHandle,
-        _duration: Real,
-    ) {
-        let particle = &mut particles[particle_key];
+    fn update_forces(&self, particles: &mut ParticleSet, _duration: Real) {
+        let particle = &mut particles[self.target];
         let delta = particle.position - self.anchor;
 
         let force =
@@ -71,21 +61,19 @@ impl ParticleForceGenerator for ParticleAnchoredSpring {
 }
 
 pub struct ParticleBungee {
+    pub target: ParticleHandle,
     pub other: ParticleHandle,
     pub spring_constant: Real,
     pub rest_length: Real,
 }
 
 impl ParticleForceGenerator for ParticleBungee {
-    fn update_force(
-        &mut self,
-        particles: &mut ParticleSet,
-        particle_key: ParticleHandle,
-        _duration: Real,
-    ) {
-        let other_pos = particles[self.other].position;
-        let particle = &mut particles[particle_key];
-        let delta = particle.position - other_pos;
+    fn update_forces(&self, particles: &mut ParticleSet, _duration: Real) {
+        let [particle, other] = particles
+            .get_disjoint_mut([self.target, self.other])
+            .unwrap();
+
+        let delta = particle.position - other.position;
         let delta_squared_magnitude = delta.squared_magnitude();
 
         if delta_squared_magnitude <= self.rest_length * self.rest_length {
@@ -97,10 +85,12 @@ impl ParticleForceGenerator for ParticleBungee {
             * delta.normalized();
 
         particle.add_force(force);
+        other.add_force(-force);
     }
 }
 
 pub struct ParticleBuoyancy {
+    pub target: ParticleHandle,
     pub max_depth: Real,
     pub volume: Real,
     pub liquid_height: Real,
@@ -108,8 +98,9 @@ pub struct ParticleBuoyancy {
 }
 
 impl ParticleBuoyancy {
-    pub fn new(max_depth: Real, volume: Real, liquid_height: Real) -> Self {
+    pub fn new(target: ParticleHandle, max_depth: Real, volume: Real, liquid_height: Real) -> Self {
         Self {
+            target,
             max_depth,
             volume,
             liquid_height,
@@ -124,13 +115,8 @@ impl ParticleBuoyancy {
 }
 
 impl ParticleForceGenerator for ParticleBuoyancy {
-    fn update_force(
-        &mut self,
-        particles: &mut ParticleSet,
-        particle: ParticleHandle,
-        _duration: Real,
-    ) {
-        let particle = &mut particles[particle];
+    fn update_forces(&self, particles: &mut ParticleSet, _duration: Real) {
+        let particle = &mut particles[self.target];
         let depth = particle.position.y;
 
         if depth >= self.liquid_height + self.max_depth {
@@ -154,35 +140,43 @@ new_key_type! {
 }
 
 #[derive(IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
-pub struct ForceGeneratorSet {
-    inner: SlotMap<ForceGeneratorHandle, Box<dyn ParticleForceGenerator>>,
+pub struct ForceGeneratorSet<T: ParticleTargetedForceGenerator> {
+    #[into_iterator]
+    #[index]
+    #[index_mut]
+    inner: SlotMap<ForceGeneratorHandle, T>,
+    registry: HashSet<ParticleHandle>,
 }
 
-impl Default for ForceGeneratorSet {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ForceGeneratorSet {
+impl<T: ParticleTargetedForceGenerator> ForceGeneratorSet<T> {
     pub fn new() -> Self {
         Self {
             inner: SlotMap::with_key(),
+            registry: HashSet::new(),
         }
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             inner: SlotMap::with_capacity_and_key(capacity),
+            registry: HashSet::with_capacity(capacity),
         }
     }
 
-    pub fn insert(&mut self, value: Box<dyn ParticleForceGenerator>) -> ForceGeneratorHandle {
+    pub fn insert(&mut self, value: T) -> ForceGeneratorHandle {
         self.inner.insert(value)
     }
 
-    pub fn remove(&mut self, key: ForceGeneratorHandle) -> Option<Box<dyn ParticleForceGenerator>> {
+    pub fn remove(&mut self, key: ForceGeneratorHandle) -> Option<T> {
         self.inner.remove(key)
+    }
+
+    pub fn register(&mut self, particle: ParticleHandle) -> bool {
+        self.registry.insert(particle)
+    }
+
+    pub fn unregister(&mut self, particle: ParticleHandle) -> bool {
+        self.registry.remove(&particle)
     }
 
     pub fn clear(&mut self) {
@@ -205,22 +199,19 @@ impl ForceGeneratorSet {
         self.inner.reserve(additional)
     }
 
-    pub fn get(&self, key: ForceGeneratorHandle) -> Option<&dyn ParticleForceGenerator> {
-        self.inner.get(key).map(|fg| &**fg)
+    pub fn get(&self, key: ForceGeneratorHandle) -> Option<&T> {
+        self.inner.get(key)
     }
 
-    pub fn get_mut(
-        &mut self,
-        key: ForceGeneratorHandle,
-    ) -> Option<&mut Box<dyn ParticleForceGenerator>> {
+    pub fn get_mut(&mut self, key: ForceGeneratorHandle) -> Option<&mut T> {
         self.inner.get_mut(key)
     }
 
-    pub fn generators(&self) -> impl Iterator<Item = &dyn ParticleForceGenerator> {
-        self.inner.values().map(|fg| fg.as_ref())
+    pub fn generators(&self) -> impl Iterator<Item = &T> {
+        self.inner.values()
     }
 
-    pub fn generators_mut(&mut self) -> impl Iterator<Item = &mut Box<dyn ParticleForceGenerator>> {
+    pub fn generators_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.inner.values_mut()
     }
 
@@ -231,7 +222,7 @@ impl ForceGeneratorSet {
     pub fn get_disjoint_mut<const N: usize>(
         &mut self,
         keys: [ForceGeneratorHandle; N],
-    ) -> Option<[&mut Box<dyn ParticleForceGenerator>; N]> {
+    ) -> Option<[&mut T; N]> {
         self.inner.get_disjoint_mut(keys)
     }
 
@@ -239,21 +230,31 @@ impl ForceGeneratorSet {
         self.inner.contains_key(key)
     }
 
-    pub fn iter(
-        &self,
-    ) -> impl Iterator<Item = (ForceGeneratorHandle, &Box<dyn ParticleForceGenerator>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (ForceGeneratorHandle, &T)> {
         self.inner.iter()
     }
 
-    pub fn iter_mut(
-        &mut self,
-    ) -> impl Iterator<Item = (ForceGeneratorHandle, &mut Box<dyn ParticleForceGenerator>)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (ForceGeneratorHandle, &mut T)> {
         self.inner.iter_mut()
     }
 
-    pub fn drain(
-        &mut self,
-    ) -> impl Iterator<Item = (ForceGeneratorHandle, Box<dyn ParticleForceGenerator>)> + '_ {
+    pub fn drain(&mut self) -> impl Iterator<Item = (ForceGeneratorHandle, T)> + '_ {
         self.inner.drain()
+    }
+}
+
+impl<T: ParticleTargetedForceGenerator> Default for ForceGeneratorSet<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: ParticleTargetedForceGenerator> ParticleForceGenerator for ForceGeneratorSet<T> {
+    fn update_forces(&self, particles: &mut ParticleSet, duration: Real) {
+        for fg in self.inner.values() {
+            for particle in particles.particles_mut() {
+                fg.update_force(particle, duration);
+            }
+        }
     }
 }
