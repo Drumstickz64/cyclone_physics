@@ -1,4 +1,4 @@
-use cyclone_physics::{math::vector::Vec3, particle::Particle, precision::Real};
+use cyclone_physics::{particle::Particle, precision::Real, Vec3};
 use macroquad::prelude::{Vec3 as MVec3, *};
 
 const MAX_FIREWORKS: usize = 16384;

@@ -1,8 +1,8 @@
+use crate::{precision::Real, Vec3};
+
 use slotmap::{new_key_type, SlotMap};
 
 use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
-
-use crate::{math::vector::Vec3, precision::Real};
 
 #[derive(Debug, Clone)]
 pub struct Particle {

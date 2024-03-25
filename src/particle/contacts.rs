@@ -1,8 +1,6 @@
-use crate::{
-    math::vector::Vec3,
-    particle::{Particle, ParticleHandle, ParticleSet},
-    precision::Real,
-};
+use crate::{precision::Real, Vec3};
+
+use super::{Particle, ParticleHandle, ParticleSet};
 
 pub trait ParticleContactGenerator {
     fn add_contacts(&self, contacts: &mut [ParticleContact], particles: &ParticleSet) -> usize;

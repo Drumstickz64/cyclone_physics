@@ -1,8 +1,9 @@
 use cyclone_physics::{
-    math::vector::Vec3,
-    particle::{Particle, ParticleSet},
-    pfgen::{ParticleAnchoredSpring, ParticleForceGenerator},
-    ppipeline::ParticlePipeline,
+    particle::{
+        fgen::{ParticleAnchoredSpring, ParticleForceGenerator},
+        Particle, ParticlePipeline, ParticleSet,
+    },
+    Vec3,
 };
 
 use macroquad::prelude::*;

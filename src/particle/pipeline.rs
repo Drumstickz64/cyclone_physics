@@ -1,7 +1,8 @@
-use crate::{
-    particle::ParticleSet,
-    pcontacts::{ParticleContact, ParticleContactGenerator, ParticleContactResolver},
-    precision::Real,
+use crate::precision::Real;
+
+use super::{
+    contacts::{ParticleContact, ParticleContactGenerator, ParticleContactResolver},
+    ParticleSet,
 };
 
 pub struct ParticlePipeline {

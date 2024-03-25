@@ -4,11 +4,9 @@ use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
 
 use slotmap::{new_key_type, SlotMap};
 
-use crate::{
-    math::vector::Vec3,
-    particle::{Particle, ParticleHandle, ParticleSet},
-    precision::Real,
-};
+use crate::{precision::Real, Vec3};
+
+use super::{Particle, ParticleHandle, ParticleSet};
 
 pub trait ParticleForceGenerator {
     fn update_forces(&self, particles: &mut ParticleSet, duration: Real);
