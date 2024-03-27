@@ -1,10 +1,5 @@
-use std::collections::HashSet;
-
-use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
-
-use slotmap::{new_key_type, SlotMap};
-
 use crate::{precision::Real, Vec3};
+use std::collections::HashSet;
 
 use super::{Particle, ParticleHandle, ParticleSet};
 
@@ -133,126 +128,57 @@ impl ParticleForceGenerator for ParticleBuoyancy {
     }
 }
 
-new_key_type! {
-    pub struct ForceGeneratorHandle;
+#[derive(Clone, Debug)]
+pub struct ForceTargetSet<T: ParticleTargetedForceGenerator> {
+    generator: T,
+    targets: HashSet<ParticleHandle>,
 }
 
-#[derive(IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
-pub struct ForceGeneratorSet<T: ParticleTargetedForceGenerator> {
-    #[into_iterator]
-    #[index]
-    #[index_mut]
-    inner: SlotMap<ForceGeneratorHandle, T>,
-    registry: HashSet<ParticleHandle>,
-}
-
-impl<T: ParticleTargetedForceGenerator> ForceGeneratorSet<T> {
-    pub fn new() -> Self {
+impl<T: ParticleTargetedForceGenerator> ForceTargetSet<T> {
+    pub fn new(generator: T) -> Self {
         Self {
-            inner: SlotMap::with_key(),
-            registry: HashSet::new(),
+            generator,
+            targets: HashSet::new(),
         }
     }
 
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub fn with_target_capacity(generator: T, capacity: usize) -> Self {
         Self {
-            inner: SlotMap::with_capacity_and_key(capacity),
-            registry: HashSet::with_capacity(capacity),
+            generator,
+            targets: HashSet::with_capacity(capacity),
         }
     }
 
-    pub fn insert(&mut self, value: T) -> ForceGeneratorHandle {
-        self.inner.insert(value)
+    pub fn add_target(&mut self, particle: ParticleHandle) -> bool {
+        self.targets.insert(particle)
     }
 
-    pub fn remove(&mut self, key: ForceGeneratorHandle) -> Option<T> {
-        self.inner.remove(key)
+    pub fn remove_target(&mut self, particle: ParticleHandle) -> bool {
+        self.targets.remove(&particle)
     }
 
-    pub fn register(&mut self, particle: ParticleHandle) -> bool {
-        self.registry.insert(particle)
+    pub fn clear_targets(&mut self) {
+        self.targets.clear()
     }
 
-    pub fn unregister(&mut self, particle: ParticleHandle) -> bool {
-        self.registry.remove(&particle)
+    pub fn targets_len(&self) -> usize {
+        self.targets.len()
     }
 
-    pub fn clear(&mut self) {
-        self.inner.clear()
+    pub fn has_target(&self) -> bool {
+        todo!()
     }
 
-    pub fn len(&self) -> usize {
-        self.inner.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
-    pub fn capacity(&self) -> usize {
-        self.inner.capacity()
-    }
-
-    pub fn reserve(&mut self, additional: usize) {
-        self.inner.reserve(additional)
-    }
-
-    pub fn get(&self, key: ForceGeneratorHandle) -> Option<&T> {
-        self.inner.get(key)
-    }
-
-    pub fn get_mut(&mut self, key: ForceGeneratorHandle) -> Option<&mut T> {
-        self.inner.get_mut(key)
-    }
-
-    pub fn generators(&self) -> impl Iterator<Item = &T> {
-        self.inner.values()
-    }
-
-    pub fn generators_mut(&mut self) -> impl Iterator<Item = &mut T> {
-        self.inner.values_mut()
-    }
-
-    pub fn handles(&self) -> impl Iterator<Item = ForceGeneratorHandle> + '_ {
-        self.inner.keys()
-    }
-
-    pub fn get_disjoint_mut<const N: usize>(
-        &mut self,
-        keys: [ForceGeneratorHandle; N],
-    ) -> Option<[&mut T; N]> {
-        self.inner.get_disjoint_mut(keys)
-    }
-
-    pub fn contains(&self, key: ForceGeneratorHandle) -> bool {
-        self.inner.contains_key(key)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (ForceGeneratorHandle, &T)> {
-        self.inner.iter()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (ForceGeneratorHandle, &mut T)> {
-        self.inner.iter_mut()
-    }
-
-    pub fn drain(&mut self) -> impl Iterator<Item = (ForceGeneratorHandle, T)> + '_ {
-        self.inner.drain()
+    pub fn targets(&self) -> impl Iterator<Item = &ParticleHandle> {
+        self.targets.iter()
     }
 }
 
-impl<T: ParticleTargetedForceGenerator> Default for ForceGeneratorSet<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T: ParticleTargetedForceGenerator> ParticleForceGenerator for ForceGeneratorSet<T> {
+impl<T: ParticleTargetedForceGenerator> ParticleForceGenerator for ForceTargetSet<T> {
     fn update_forces(&self, particles: &mut ParticleSet, duration: Real) {
-        for fg in self.inner.values() {
-            for particle in particles.particles_mut() {
-                fg.update_force(particle, duration);
-            }
+        for target in self.targets.iter().copied() {
+            self.generator
+                .update_force(&mut particles[target], duration)
         }
     }
 }
