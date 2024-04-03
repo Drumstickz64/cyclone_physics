@@ -1,5 +1,7 @@
 use self::vector::Vec3;
 
+pub mod matrix;
+pub mod quat;
 pub mod vector;
 
 pub fn make_orthonormal_basis(a: Vec3, b: Vec3) -> (Vec3, Vec3, Vec3) {
