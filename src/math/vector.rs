@@ -5,8 +5,6 @@ use std::{
 
 use crate::precision::Real;
 
-use super::matrix::Mat4;
-
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 pub struct Vec3 {
     pub x: Real,
@@ -81,22 +79,6 @@ impl Vec3 {
             y: self.y * rhs.y,
             z: self.z * rhs.z,
         }
-    }
-
-    pub fn to_world_coords(self, transform: &Mat4) -> Self {
-        transform.transform(self)
-    }
-
-    pub fn to_local_coords(self, transform: &Mat4) -> Self {
-        transform.transform_inverse(self)
-    }
-
-    pub fn to_world_coords_dir(self, transform: &Mat4) -> Self {
-        transform.transform_direction(self)
-    }
-
-    pub fn to_local_coords_dir(self, transform: &Mat4) -> Self {
-        transform.transform_inverse_direction(self)
     }
 }
 
