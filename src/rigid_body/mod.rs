@@ -1,4 +1,13 @@
-use crate::{precision::Real, Mat3, Mat4, Quat, Vec3};
+pub mod fgen;
+mod pipeline;
+
+pub use pipeline::RigidBodyPipeline;
+
+use slotmap::{new_key_type, SlotMap};
+
+use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
+
+use crate::{consts, precision::Real, Mat3, Mat4, Quat, Vec3};
 
 /// A rigid body is the basic simulation object in the physics
 /// core.
@@ -14,11 +23,20 @@ pub struct RigidBody {
     /// Holds the amount of damping applied to linear
     /// motion. Damping is required to remove energy added
     /// through numerical instability in the integrator.
-    pub linear_damping: Real,
+    pub damping: Real,
+    pub angular_damping: Real,
     pub position: Vec3,
     pub orientation: Quat,
     pub velocity: Vec3,
-    pub rotation: Vec3,
+    pub angular_velocity: Vec3,
+    /// used to add a constant acceleration to the acceleration
+    /// computed from forces at each frame
+    pub frame_start_acceleration: Vec3,
+    /// used to add a constant angular acceleration to the angular acceleration
+    /// computed from torques at each frame
+    pub frame_start_angular_acceleration: Vec3,
+
+    pub gravity: Vec3,
     /// Holds the inverse of the body’s inertia tensor. The
     /// intertia tensor provided must not be degenerate
     /// (that would mean the body had zero inertia for
@@ -44,7 +62,121 @@ pub struct RigidBody {
 }
 
 impl RigidBody {
+    pub fn new(mass: Real) -> Self {
+        assert_ne!(mass, 0.0, "Rigid bodies can't have zero mass");
+        let inverse_mass = if mass == Real::INFINITY {
+            0.0
+        } else {
+            mass.recip()
+        };
+
+        Self {
+            inverse_mass,
+            damping: 0.99,
+            angular_damping: 0.99,
+            position: Vec3::ZERO,
+            orientation: Quat::IDENTITY,
+            velocity: Vec3::ZERO,
+            angular_velocity: Vec3::ZERO,
+            frame_start_acceleration: Vec3::ZERO,
+            frame_start_angular_acceleration: Vec3::ZERO,
+            gravity: consts::GRAVITY,
+            inverse_inertia_tensor: Mat3::IDENTITY,
+            transform_matrix: Mat4::IDENTITY,
+            inverse_inertia_tensor_world: Mat3::IDENTITY,
+            force_accum: Vec3::ZERO,
+            torque_accum: Vec3::ZERO,
+            is_awake: true,
+        }
+    }
+
+    pub fn with_mass(mut self, mass: Real) -> Self {
+        self.set_mass(mass);
+        self
+    }
+
+    pub fn with_inverse_mass(mut self, inverse_mass: Real) -> Self {
+        self.inverse_mass = inverse_mass;
+        self
+    }
+
+    pub fn with_damping(mut self, damping: Real) -> Self {
+        self.damping = damping;
+        self
+    }
+
+    pub fn with_angular_damping(mut self, angular_damping: Real) -> Self {
+        self.angular_damping = angular_damping;
+        self
+    }
+
+    pub fn with_position(mut self, position: Vec3) -> Self {
+        self.position = position;
+        self
+    }
+
+    pub fn with_orientation(mut self, orientation: Quat) -> Self {
+        self.orientation = orientation;
+        self
+    }
+
+    pub fn with_angular_velocity(mut self, angular_velocity: Vec3) -> Self {
+        self.angular_velocity = angular_velocity;
+        self
+    }
+
+    pub fn with_inverse_inertia_tensor(mut self, inverse_inertia_tensor: Mat3) -> Self {
+        self.inverse_inertia_tensor = inverse_inertia_tensor;
+        self
+    }
+
+    pub fn with_inertia_tensor(mut self, inertia_tensor: Mat3) -> Self {
+        self.set_inertia_tensor(inertia_tensor);
+        self
+    }
+
+    pub fn with_gravity(mut self, gravity: Vec3) -> Self {
+        self.gravity = gravity;
+        self
+    }
+
+    pub fn with_frame_start_acceleration(mut self, frame_start_acceleration: Vec3) -> Self {
+        self.frame_start_acceleration = frame_start_acceleration;
+        self
+    }
+
+    pub fn with_frame_start_angular_acceleration(
+        mut self,
+        frame_start_angular_acceleration: Vec3,
+    ) -> Self {
+        self.frame_start_angular_acceleration = frame_start_angular_acceleration;
+        self
+    }
+
+    //NOTE: why >= and not >? doesn't inverse_mass being zero mean that the objects mass
+    // is infinite?
+    pub fn has_finite_mass(&self) -> bool {
+        self.inverse_mass >= 0.0
+    }
+
+    pub fn mass(&self) -> Real {
+        if self.inverse_mass == 0.0 {
+            return Real::MAX;
+        }
+
+        self.inverse_mass.recip()
+    }
+
+    pub fn set_mass(&mut self, mass: Real) {
+        assert_ne!(mass, 0.0, "Rigid bodies can't have zero mass");
+        self.inverse_mass = mass.recip()
+    }
+
     pub fn calc_inertia_tensor(&self) -> Mat3 {
+        self.inverse_inertia_tensor.inverse()
+    }
+
+    pub fn inertia_tensor(&self) -> Mat3 {
         self.inverse_inertia_tensor.inverse()
     }
 
@@ -57,7 +189,24 @@ impl RigidBody {
     /// linear approximation to the correct integral. For this reason it
     /// may be inaccurate in some cases.
     pub fn integrate(&mut self, duration: Real) {
-        todo!()
+        self.apply_gravity();
+
+        let acceleration = self.frame_start_acceleration + self.force_accum * self.inverse_mass;
+        let angular_acceleration = self.frame_start_angular_acceleration
+            + self.inverse_inertia_tensor_world * self.torque_accum;
+
+        self.velocity = self.velocity * self.damping.powf(duration) + acceleration * duration;
+        self.angular_velocity = self.angular_velocity * self.angular_damping.powf(duration)
+            + angular_acceleration * duration;
+
+        self.position += self.velocity * duration;
+        self.orientation = self
+            .orientation
+            .add_scaled_vector(self.angular_velocity, duration);
+
+        self.update_derived_data();
+
+        self.clear_accumelators();
     }
 
     /// Adds the given force to centre of mass of the rigid body.
@@ -87,6 +236,13 @@ impl RigidBody {
         self.add_force_at_point(force, point);
     }
 
+    /// Adds the given torque to the rigid body.
+    /// The force is expressed in world-coordinates.
+    pub fn add_torque(&mut self, torque: Vec3) {
+        self.torque_accum += torque;
+        self.is_awake = true;
+    }
+
     /// Calculates internal data from state data. This should be called
     /// after the body's state is altered directly (it is called
     /// automatically during integration). If you change the body's state
@@ -110,9 +266,17 @@ impl RigidBody {
         self.transform_matrix.transform_inverse(point)
     }
 
-    pub(crate) fn clear_accumelators(&mut self, force: Vec3, point: Vec3) {
+    pub(crate) fn clear_accumelators(&mut self) {
         self.force_accum = Vec3::ZERO;
         self.torque_accum = Vec3::ZERO;
+    }
+
+    fn apply_gravity(&mut self) {
+        if !self.has_finite_mass() {
+            return;
+        }
+
+        self.add_force(self.gravity * self.mass());
     }
 }
 
@@ -147,4 +311,98 @@ fn inverse_inertia_tensor_to_world_coords(iit: Mat3, rotmat: Mat4) -> Mat3 {
         t52 * rotmat.data[4] + t57 * rotmat.data[5] + t62 * rotmat.data[6],
         t52 * rotmat.data[8] + t57 * rotmat.data[9] + t62 * rotmat.data[10],
     ])
+}
+
+new_key_type! {
+    pub struct RigidBodyHandle;
+}
+
+#[derive(Debug, Clone, Default, IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
+pub struct RigidBodySet {
+    inner: SlotMap<RigidBodyHandle, RigidBody>,
+}
+
+impl RigidBodySet {
+    pub fn new() -> Self {
+        Self {
+            inner: SlotMap::with_key(),
+        }
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: SlotMap::with_capacity_and_key(capacity),
+        }
+    }
+
+    pub fn insert(&mut self, value: RigidBody) -> RigidBodyHandle {
+        self.inner.insert(value)
+    }
+
+    pub fn remove(&mut self, key: RigidBodyHandle) -> Option<RigidBody> {
+        self.inner.remove(key)
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear()
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn get(&self, key: RigidBodyHandle) -> Option<&RigidBody> {
+        self.inner.get(key)
+    }
+
+    pub fn get_mut(&mut self, key: RigidBodyHandle) -> Option<&mut RigidBody> {
+        self.inner.get_mut(key)
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    pub fn bodies(&self) -> impl Iterator<Item = &RigidBody> {
+        self.inner.values()
+    }
+
+    pub fn bodies_mut(&mut self) -> impl Iterator<Item = &mut RigidBody> {
+        self.inner.values_mut()
+    }
+
+    pub fn handles(&self) -> impl Iterator<Item = RigidBodyHandle> + '_ {
+        self.inner.keys()
+    }
+
+    pub fn get_disjoint_mut<const N: usize>(
+        &mut self,
+        keys: [RigidBodyHandle; N],
+    ) -> Option<[&mut RigidBody; N]> {
+        self.inner.get_disjoint_mut(keys)
+    }
+
+    pub fn contains(&self, key: RigidBodyHandle) -> bool {
+        self.inner.contains_key(key)
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.inner.reserve(additional)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (RigidBodyHandle, &RigidBody)> {
+        self.inner.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (RigidBodyHandle, &mut RigidBody)> {
+        self.inner.iter_mut()
+    }
+
+    pub fn drain(&mut self) -> impl Iterator<Item = (RigidBodyHandle, RigidBody)> + '_ {
+        self.inner.drain()
+    }
 }

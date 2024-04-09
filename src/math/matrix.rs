@@ -15,6 +15,12 @@ pub struct Mat3 {
 }
 
 impl Mat3 {
+    pub const IDENTITY: Self = Self::new([
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0,
+    ]);
+    
     pub const fn new(data: [Real; 9]) -> Self {
         Self { data }
     }
@@ -172,7 +178,14 @@ pub struct Mat4 {
 }
 
 impl Mat4 {
-    pub fn new(data: [Real; 12]) -> Self {
+    pub const IDENTITY: Self = Self::new([
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0,
+    ]);
+
+    pub const fn new(data: [Real; 12]) -> Self {
         Self {
             data,
         }

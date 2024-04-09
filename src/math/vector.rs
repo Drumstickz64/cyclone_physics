@@ -23,22 +23,27 @@ impl Vec3 {
     pub const ONE: Self = Self::new(1.0, 1.0, 1.0);
     pub const NEG_ONE: Self = Self::new(-1.0, -1.0, -1.0);
 
+    #[inline(always)]
     pub const fn new(x: Real, y: Real, z: Real) -> Self {
         Self { x, y, z }
     }
 
+    #[inline(always)]
     pub const fn splat(v: Real) -> Self {
         Self { x: v, y: v, z: v }
     }
 
+    #[inline(always)]
     pub fn magnitude(self) -> Real {
-        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+        self.squared_magnitude().sqrt()
     }
 
+    #[inline(always)]
     pub fn squared_magnitude(self) -> Real {
-        self.x * self.x + self.y * self.y + self.z * self.z
+        self.dot(self)
     }
 
+    #[inline(always)]
     pub fn normalized(self) -> Self {
         let sq_mag = self.squared_magnitude();
 
@@ -49,22 +54,27 @@ impl Vec3 {
         self / sq_mag.sqrt()
     }
 
+    #[inline(always)]
     pub fn distance_to(self, other: Self) -> Real {
         (other - self).magnitude()
     }
 
+    #[inline(always)]
     pub fn distance_to_squared(self, other: Self) -> Real {
         (other - self).squared_magnitude()
     }
 
+    #[inline(always)]
     pub fn direction_to(self, other: Self) -> Self {
         (other - self).normalized()
     }
 
+    #[inline(always)]
     pub fn dot(self, rhs: Self) -> Real {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
+    #[inline(always)]
     pub fn cross(self, rhs: Self) -> Self {
         Self {
             x: self.y * rhs.z - self.z * rhs.y,
@@ -73,6 +83,7 @@ impl Vec3 {
         }
     }
 
+    #[inline(always)]
     pub fn component_product(self, rhs: Self) -> Self {
         Self {
             x: self.x * rhs.x,
@@ -185,6 +196,6 @@ impl Neg for Vec3 {
 impl fmt::Display for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Vec3 { x, y, z } = *self;
-        write!(f, "<{x}, {y}, {z}>")
+        write!(f, "< {x}, {y}, {z} >")
     }
 }

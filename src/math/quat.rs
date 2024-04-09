@@ -21,14 +21,19 @@ pub struct Quat {
 }
 
 impl Quat {
-    pub const fn new(r: Real, i: Real, j: Real, k: Real) -> Self {
+    pub const IDENTITY: Self = Self::from_rijk(1.0, 0.0, 0.0, 0.0);
+
+    #[inline(always)]
+    pub const fn from_rijk(r: Real, i: Real, j: Real, k: Real) -> Self {
         Self { r, i, j, k }
     }
 
+    #[inline(always)]
     pub const fn to_array(self) -> [Real; 4] {
         [self.r, self.i, self.j, self.k]
     }
 
+    #[inline(always)]
     pub fn normalized(self) -> Self {
         let squared_magnitude =
             self.r * self.r + self.i * self.i + self.j * self.j + self.k * self.k;
@@ -52,17 +57,18 @@ impl Quat {
         }
     }
 
+    #[inline(always)]
     pub fn rotated_by_vector(self, vector: Vec3) -> Self {
-        let q = Self::new(0.0, vector.x, vector.y, vector.z);
+        let q = Self::from_rijk(0.0, vector.x, vector.y, vector.z);
 
         self * q
     }
 
     /// Adds the given vector to this, scaled by the given amount.
-    /// This is used to update the orientation quaternion by a rotation
-    /// and time.
+    ///
+    /// #[inline(always)]This is used to update the orientation quaternion by a rotation and time.
     pub fn add_scaled_vector(self, vector: Vec3, scale: Real) -> Self {
-        let q = Self::new(0.0, vector.x * scale, vector.y * scale, vector.z * scale);
+        let q = Self::from_rijk(0.0, vector.x * scale, vector.y * scale, vector.z * scale);
         let q = q * self;
 
         Self {
@@ -71,6 +77,32 @@ impl Quat {
             j: self.j + q.j * 0.5,
             k: self.k + q.k * 0.5,
         }
+    }
+
+    #[inline(always)]
+    pub fn inverse(self) -> Self {
+        debug_assert!(self.is_normalized());
+        self.conjugate()
+    }
+
+    #[inline(always)]
+    pub fn conjugate(self) -> Self {
+        Quat::from_rijk(self.r, -self.i, -self.j, -self.k)
+    }
+
+    #[inline(always)]
+    pub fn is_normalized(self) -> bool {
+        (self.squared_magnitude() - 1.0).abs() <= 2e-4
+    }
+
+    #[inline(always)]
+    pub fn magnitude(self) -> Real {
+        self.squared_magnitude().sqrt()
+    }
+
+    #[inline(always)]
+    pub fn squared_magnitude(self) -> Real {
+        self.r * self.r + self.i * self.i + self.j * self.j + self.k * self.k
     }
 }
 
