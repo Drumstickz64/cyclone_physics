@@ -1,5 +1,5 @@
 [package]
-name = "cyclone_physics"
+name = "cyclone-physics"
 version = "0.1.0"
 edition = "2021"
 
