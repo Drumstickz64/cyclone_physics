@@ -1,13 +1,13 @@
 use crate::{
     precision::Real,
-    rigid_body::{RigidBodyHandle, RigidBodySet},
+    rigid_body::{RigidBodyId, RigidBodySet},
     Vec3,
 };
 
 #[derive(Debug, Clone)]
 pub struct Spring {
-    pub body_a: RigidBodyHandle,
-    pub body_b: RigidBodyHandle,
+    pub body_a: RigidBodyId,
+    pub body_b: RigidBodyId,
     pub connection_point_a: Vec3,
     pub connection_point_b: Vec3,
     pub spring_constant: Real,
@@ -28,5 +28,29 @@ impl Spring {
 
         body_a.add_force_at_point(force, connect_point_a_ws);
         body_b.add_force_at_point(-force, connect_point_b_ws);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnchoredSpring {
+    pub target: RigidBodyId,
+    pub anchor: Vec3,
+    pub connection_point: Vec3,
+    pub spring_constant: Real,
+    pub rest_length: Real,
+}
+
+impl AnchoredSpring {
+    pub fn add_forces(&self, bodies: &mut RigidBodySet) {
+        let body = &mut bodies[self.target];
+        let connect_point_ws = body.get_point_in_world_space(self.connection_point);
+
+        let delta = connect_point_ws - self.anchor;
+
+        // Hook's law
+        let force =
+            self.spring_constant * (delta.magnitude() - self.rest_length) * -delta.normalized();
+
+        body.add_force_at_point(force, connect_point_ws);
     }
 }

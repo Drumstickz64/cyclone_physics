@@ -66,7 +66,8 @@ impl Quat {
 
     /// Adds the given vector to this, scaled by the given amount.
     ///
-    /// #[inline(always)]This is used to update the orientation quaternion by a rotation and time.
+    /// This is used to update the orientation quaternion by a rotation and time.
+    #[inline(always)]
     pub fn add_scaled_vector(self, vector: Vec3, scale: Real) -> Self {
         let q = Self::from_rijk(0.0, vector.x * scale, vector.y * scale, vector.z * scale);
         let q = q * self;

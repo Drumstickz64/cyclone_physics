@@ -2,9 +2,9 @@ use crate::precision::Real;
 
 use super::RigidBodySet;
 
-pub struct RigidBodyPipeline;
+pub struct PhysicsSystem;
 
-impl RigidBodyPipeline {
+impl PhysicsSystem {
     pub fn new() -> Self {
         Self
     }
@@ -27,7 +27,7 @@ impl RigidBodyPipeline {
     }
 }
 
-impl Default for RigidBodyPipeline {
+impl Default for PhysicsSystem {
     fn default() -> Self {
         Self::new()
     }

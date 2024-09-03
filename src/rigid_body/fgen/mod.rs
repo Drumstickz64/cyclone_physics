@@ -1,3 +1,3 @@
 mod springs;
 
-pub use springs::Spring;
+pub use springs::{AnchoredSpring, Spring};

@@ -1,6 +1,6 @@
 use crate::{precision::Real, Vec3};
 
-use super::{Particle, ParticleHandle, ParticleSet};
+use super::{Particle, ParticleId, ParticleSet};
 
 pub trait ParticleContactGenerator {
     fn add_contacts(&self, contacts: &mut [ParticleContact], particles: &ParticleSet) -> usize;
@@ -8,8 +8,8 @@ pub trait ParticleContactGenerator {
 
 #[derive(Debug, Clone, Default)]
 pub struct ParticleContact {
-    pub particle_a: ParticleHandle,
-    pub particle_b: Option<ParticleHandle>,
+    pub particle_a: ParticleId,
+    pub particle_b: Option<ParticleId>,
     pub data: ParticleContactData,
 }
 
@@ -36,8 +36,8 @@ impl ParticleContactData {
 
 impl ParticleContact {
     pub fn new(
-        particle_a: ParticleHandle,
-        particle_b: Option<ParticleHandle>,
+        particle_a: ParticleId,
+        particle_b: Option<ParticleId>,
         restitution: Real,
         normal: Vec3,
         penetration: Real,
@@ -150,21 +150,27 @@ impl ParticleContactResolver {
             particle_b.as_deref(),
             contact_data.normal,
         );
+
         if seperating_velocity > 0.0 {
             return;
         }
 
         let mut new_sep_velocity = -contact_data.restitution * seperating_velocity;
 
+        // Check the velocity buildup due to acceleration only.
         let acc_caused_velocity = match particle_b.as_ref() {
             Some(particle_b) => particle_a.acceleration - particle_b.acceleration,
             None => particle_a.acceleration,
         };
 
         let acc_caused_sep_velocity = acc_caused_velocity.dot(contact_data.normal) * duration;
+        // If we’ve got a closing velocity due to aceleration buildup,
+        // remove it from the new separating velocity.
         if acc_caused_sep_velocity < 0.0 {
             new_sep_velocity += acc_caused_sep_velocity * contact_data.restitution;
 
+            // Make sure we haven’t removed more than was
+            // there to remove.
             if new_sep_velocity < 0.0 {
                 new_sep_velocity = 0.0;
             }
@@ -201,7 +207,7 @@ impl ParticleContactResolver {
             return;
         }
 
-        let total_inv_mass = match particle_b.as_ref() {
+        let total_inv_mass = match &particle_b {
             Some(particle_b) => particle_a.inverse_mass + particle_b.inverse_mass,
             None => particle_a.inverse_mass,
         };

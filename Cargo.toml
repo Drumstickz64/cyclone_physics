@@ -7,10 +7,11 @@ edition = "2021"
 
 [dependencies]
 derive_more = "0.99.17"
+downcast-rs = "1.2.1"
 slotmap = "1.0.7"
 
 [features]
-f64 = []
+double_precision = []
 
 [dev-dependencies]
 macroquad = "0.4.5"

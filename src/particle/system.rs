@@ -2,17 +2,19 @@ use crate::precision::Real;
 
 use super::{
     contacts::{ParticleContact, ParticleContactGenerator, ParticleContactResolver},
+    fgen::ParticleForceGeneratorSet,
     ParticleSet,
 };
 
-pub struct ParticlePipeline {
+#[derive(Debug, Clone)]
+pub struct ParticlePhysicsSystem {
     resolver: ParticleContactResolver,
     contacts: Vec<ParticleContact>,
     contacts_used: usize,
     calculate_iterations: bool,
 }
 
-impl ParticlePipeline {
+impl ParticlePhysicsSystem {
     pub fn new(max_contacts: usize, iterations: u32) -> Self {
         Self {
             resolver: ParticleContactResolver::new(iterations),
@@ -22,7 +24,14 @@ impl ParticlePipeline {
         }
     }
 
-    pub fn step(&mut self, particles: &mut ParticleSet, duration: Real) {
+    pub fn step(
+        &mut self,
+        particles: &mut ParticleSet,
+        generators: &mut ParticleForceGeneratorSet,
+        duration: Real,
+    ) {
+        generators.update_forces(particles, duration);
+
         for particle in particles.particles_mut() {
             particle.integrate(duration);
         }

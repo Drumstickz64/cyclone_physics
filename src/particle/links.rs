@@ -2,13 +2,13 @@ use crate::{precision::Real, Vec3};
 
 use super::{
     contacts::{ParticleContact, ParticleContactData, ParticleContactGenerator},
-    ParticleHandle, ParticleSet,
+    ParticleId, ParticleSet,
 };
 
 #[derive(Debug, Clone)]
 pub struct ParticleCable {
-    pub particle_a: ParticleHandle,
-    pub particle_b: ParticleHandle,
+    pub particle_a: ParticleId,
+    pub particle_b: ParticleId,
     pub max_length: Real,
     pub restitution: Real,
 }
@@ -38,8 +38,8 @@ impl ParticleContactGenerator for ParticleCable {
 
 #[derive(Debug, Clone)]
 pub struct ParticleRod {
-    pub particle_a: ParticleHandle,
-    pub particle_b: ParticleHandle,
+    pub particle_a: ParticleId,
+    pub particle_b: ParticleId,
     pub length: Real,
 }
 
@@ -73,35 +73,8 @@ impl ParticleContactGenerator for ParticleRod {
 }
 
 #[derive(Debug, Clone)]
-pub struct ParticleGroundCollider {
-    pub particle: ParticleHandle,
-    pub particle_radius: Real,
-    pub restitution: Real,
-}
-
-impl ParticleContactGenerator for ParticleGroundCollider {
-    fn add_contacts(&self, contacts: &mut [ParticleContact], particles: &ParticleSet) -> usize {
-        let position = particles[self.particle].position;
-        if position.y > self.particle_radius {
-            return 0;
-        }
-
-        let normal = Vec3::Y;
-        let penetration = self.particle_radius - position.y;
-
-        contacts[0] = ParticleContact {
-            particle_a: self.particle,
-            particle_b: None,
-            data: ParticleContactData::new(self.restitution, normal, penetration),
-        };
-
-        1
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct ParticleCableConstraint {
-    pub particle_a: ParticleHandle,
+    pub particle_a: ParticleId,
     pub anchor: Vec3,
     pub max_length: Real,
     pub restitution: Real,
@@ -131,7 +104,7 @@ impl ParticleContactGenerator for ParticleCableConstraint {
 
 #[derive(Debug, Clone)]
 pub struct ParticleRodConstraint {
-    pub particle_a: ParticleHandle,
+    pub particle_a: ParticleId,
     pub anchor: Vec3,
     pub length: Real,
 }

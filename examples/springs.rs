@@ -1,7 +1,7 @@
 use cyclone_physics::{
     particle::{
-        fgen::{ParticleAnchoredSpring, ParticleForceGenerator},
-        Particle, ParticlePipeline, ParticleSet,
+        fgen::{ParticleAnchoredSpring, ParticleForceGenerator, ParticleForceGeneratorSet},
+        Particle, ParticlePhysicsSystem, ParticleSet,
     },
     Vec3,
 };
@@ -23,6 +23,7 @@ const SPRING_COLOR: Color = GREEN;
 #[macroquad::main("Springs")]
 async fn main() {
     let mut particles = ParticleSet::new();
+    let mut generators = ParticleForceGeneratorSet::new();
 
     let player_particle = particles.insert(
         Particle::new(PLAYER_MASS)
@@ -31,14 +32,14 @@ async fn main() {
             .with_damping(PLAYER_DAMPING),
     );
 
-    let mut spring = ParticleAnchoredSpring {
+    let spring = generators.insert(ParticleAnchoredSpring {
         target: player_particle,
         anchor: mouse_pos_vec(),
         spring_constant: SPRING_CONSTANT,
         rest_length: SPRING_REST_LENGTH,
-    };
+    });
 
-    let mut pipeline = ParticlePipeline::new(1024, 0);
+    let mut system = ParticlePhysicsSystem::new(1024, 0);
 
     loop {
         clear_background(BLACK);
@@ -46,12 +47,13 @@ async fn main() {
         let duration = get_frame_time();
         let mouse_pos = mouse_pos_vec();
 
-        pipeline.start_frame(&mut particles);
+        system.start_frame(&mut particles);
 
+        let spring: &mut ParticleAnchoredSpring = generators.get_mut(spring).unwrap();
         spring.anchor = mouse_pos;
         spring.update_forces(&mut particles, duration);
 
-        pipeline.step(&mut particles, duration);
+        system.step(&mut particles, &mut generators, duration);
 
         let player_pos = particles[player_particle].position;
 

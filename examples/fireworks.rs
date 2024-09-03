@@ -1,10 +1,22 @@
 use cyclone_physics::{particle::Particle, precision::Real, Vec3};
 use macroquad::prelude::{Vec3 as MVec3, *};
+use rand::gen_range;
 
-const MAX_FIREWORKS: usize = 16384;
-const SIZE: Real = 1.5;
+const MAX_FIREWORKS: usize = 1024;
+const SIZE: Real = 0.1;
+static MAIN_RULES: [usize; 5] = [0, 1, 5, 6, 8];
 
-#[macroquad::main("Fireworks Demo")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Fireworks Demo".to_owned(),
+        window_width: 640,
+        window_height: 320,
+        sample_count: 8,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
     let mut state = State::new();
     let rules = firework_rules();
@@ -18,70 +30,42 @@ async fn main() {
 
     loop {
         for key in get_keys_down().iter() {
-            for _ in 0..10 {
-                match key {
-                    KeyCode::Key0 => create_firework(
-                        &mut state,
-                        &rules[rand::gen_range(0, 9)],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key1 => create_firework(
-                        &mut state,
-                        &rules[0],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key2 => create_firework(
-                        &mut state,
-                        &rules[1],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key3 => create_firework(
-                        &mut state,
-                        &rules[2],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key4 => create_firework(
-                        &mut state,
-                        &rules[3],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key5 => create_firework(
-                        &mut state,
-                        &rules[4],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key6 => create_firework(
-                        &mut state,
-                        &rules[5],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key7 => create_firework(
-                        &mut state,
-                        &rules[6],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key8 => create_firework(
-                        &mut state,
-                        &rules[7],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    KeyCode::Key9 => create_firework(
-                        &mut state,
-                        &rules[8],
-                        random_initial_position(),
-                        Vec3::ZERO,
-                    ),
-                    _ => {}
+            match key {
+                KeyCode::M => println!("<{}, {}>", screen_width(), screen_height()),
+                KeyCode::Key0 => create_firework(
+                    &mut state,
+                    &rules[MAIN_RULES[gen_range(0, MAIN_RULES.len())]],
+                    random_initial_position(),
+                    Vec3::ZERO,
+                ),
+                KeyCode::Key1 => {
+                    create_firework(&mut state, &rules[0], random_initial_position(), Vec3::ZERO)
                 }
+                KeyCode::Key2 => {
+                    create_firework(&mut state, &rules[1], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key3 => {
+                    create_firework(&mut state, &rules[2], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key4 => {
+                    create_firework(&mut state, &rules[3], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key5 => {
+                    create_firework(&mut state, &rules[4], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key6 => {
+                    create_firework(&mut state, &rules[5], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key7 => {
+                    create_firework(&mut state, &rules[6], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key8 => {
+                    create_firework(&mut state, &rules[7], random_initial_position(), Vec3::ZERO)
+                }
+                KeyCode::Key9 => {
+                    create_firework(&mut state, &rules[8], random_initial_position(), Vec3::ZERO)
+                }
+                _ => (),
             }
         }
 
@@ -159,7 +143,7 @@ fn draw(state: &State) {
 type ParticleKind = usize;
 
 struct State {
-    fireworks: Vec<Firework>,
+    fireworks: Box<[Firework]>,
     next_firework: usize,
 }
 
@@ -167,7 +151,7 @@ impl State {
     pub fn new() -> Self {
         Self {
             next_firework: 0,
-            fireworks: vec![Firework::default(); MAX_FIREWORKS],
+            fireworks: vec![Firework::default(); MAX_FIREWORKS].into_boxed_slice(),
         }
     }
 }

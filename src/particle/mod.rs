@@ -1,15 +1,15 @@
 pub mod contacts;
 pub mod fgen;
 pub mod links;
-mod pipeline;
+mod system;
 
-pub use pipeline::ParticlePipeline;
+pub use system::ParticlePhysicsSystem;
 
 use crate::{precision::Real, Vec3};
 
 use slotmap::{new_key_type, SlotMap};
 
-use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
+use derive_more::{From, Index, IndexMut, IntoIterator};
 
 #[derive(Debug, Clone)]
 pub struct Particle {
@@ -113,12 +113,12 @@ impl Particle {
 }
 
 new_key_type! {
-    pub struct ParticleHandle;
+    pub struct ParticleId;
 }
 
-#[derive(Debug, Clone, Default, IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
+#[derive(Debug, Clone, Default, IntoIterator, Index, IndexMut, From)]
 pub struct ParticleSet {
-    inner: SlotMap<ParticleHandle, Particle>,
+    inner: SlotMap<ParticleId, Particle>,
 }
 
 impl ParticleSet {
@@ -134,11 +134,11 @@ impl ParticleSet {
         }
     }
 
-    pub fn insert(&mut self, value: Particle) -> ParticleHandle {
+    pub fn insert(&mut self, value: Particle) -> ParticleId {
         self.inner.insert(value)
     }
 
-    pub fn remove(&mut self, key: ParticleHandle) -> Option<Particle> {
+    pub fn remove(&mut self, key: ParticleId) -> Option<Particle> {
         self.inner.remove(key)
     }
 
@@ -154,11 +154,11 @@ impl ParticleSet {
         self.inner.is_empty()
     }
 
-    pub fn get(&self, key: ParticleHandle) -> Option<&Particle> {
+    pub fn get(&self, key: ParticleId) -> Option<&Particle> {
         self.inner.get(key)
     }
 
-    pub fn get_mut(&mut self, key: ParticleHandle) -> Option<&mut Particle> {
+    pub fn get_mut(&mut self, key: ParticleId) -> Option<&mut Particle> {
         self.inner.get_mut(key)
     }
 
@@ -174,18 +174,18 @@ impl ParticleSet {
         self.inner.values_mut()
     }
 
-    pub fn handles(&self) -> impl Iterator<Item = ParticleHandle> + '_ {
+    pub fn handles(&self) -> impl Iterator<Item = ParticleId> + '_ {
         self.inner.keys()
     }
 
     pub fn get_disjoint_mut<const N: usize>(
         &mut self,
-        keys: [ParticleHandle; N],
+        keys: [ParticleId; N],
     ) -> Option<[&mut Particle; N]> {
         self.inner.get_disjoint_mut(keys)
     }
 
-    pub fn contains(&self, key: ParticleHandle) -> bool {
+    pub fn contains(&self, key: ParticleId) -> bool {
         self.inner.contains_key(key)
     }
 
@@ -193,15 +193,15 @@ impl ParticleSet {
         self.inner.reserve(additional)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (ParticleHandle, &Particle)> {
+    pub fn iter(&self) -> impl Iterator<Item = (ParticleId, &Particle)> {
         self.inner.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (ParticleHandle, &mut Particle)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (ParticleId, &mut Particle)> {
         self.inner.iter_mut()
     }
 
-    pub fn drain(&mut self) -> impl Iterator<Item = (ParticleHandle, Particle)> + '_ {
+    pub fn drain(&mut self) -> impl Iterator<Item = (ParticleId, Particle)> + '_ {
         self.inner.drain()
     }
 }

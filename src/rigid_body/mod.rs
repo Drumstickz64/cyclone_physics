@@ -1,13 +1,13 @@
 pub mod fgen;
-mod pipeline;
+mod system;
 
-pub use pipeline::RigidBodyPipeline;
+pub use system::PhysicsSystem;
 
 use slotmap::{new_key_type, SlotMap};
 
-use derive_more::{AsMut, AsRef, From, Index, IndexMut, IntoIterator};
+use derive_more::{From, Index, IndexMut, IntoIterator};
 
-use crate::{consts, precision::Real, Mat3, Mat4, Quat, Vec3};
+use crate::{math::local_to_world, precision::Real, Mat3, Mat4, Quat, Vec3};
 
 /// A rigid body is the basic simulation object in the physics
 /// core.
@@ -31,12 +31,11 @@ pub struct RigidBody {
     pub angular_velocity: Vec3,
     /// used to add a constant acceleration to the acceleration
     /// computed from forces at each frame
-    pub frame_start_acceleration: Vec3,
+    pub acceleration: Vec3,
     /// used to add a constant angular acceleration to the angular acceleration
     /// computed from torques at each frame
-    pub frame_start_angular_acceleration: Vec3,
+    pub angular_acceleration: Vec3,
 
-    pub gravity: Vec3,
     /// Holds the inverse of the body’s inertia tensor. The
     /// intertia tensor provided must not be degenerate
     /// (that would mean the body had zero inertia for
@@ -59,6 +58,7 @@ pub struct RigidBody {
     force_accum: Vec3,
     torque_accum: Vec3,
     is_awake: bool,
+    last_frame_acceleration: Vec3,
 }
 
 impl RigidBody {
@@ -78,15 +78,15 @@ impl RigidBody {
             orientation: Quat::IDENTITY,
             velocity: Vec3::ZERO,
             angular_velocity: Vec3::ZERO,
-            frame_start_acceleration: Vec3::ZERO,
-            frame_start_angular_acceleration: Vec3::ZERO,
-            gravity: consts::GRAVITY,
+            acceleration: Vec3::ZERO,
+            angular_acceleration: Vec3::ZERO,
             inverse_inertia_tensor: Mat3::IDENTITY,
             transform_matrix: Mat4::IDENTITY,
             inverse_inertia_tensor_world: Mat3::IDENTITY,
             force_accum: Vec3::ZERO,
             torque_accum: Vec3::ZERO,
             is_awake: true,
+            last_frame_acceleration: Vec3::ZERO,
         }
     }
 
@@ -135,21 +135,13 @@ impl RigidBody {
         self
     }
 
-    pub fn with_gravity(mut self, gravity: Vec3) -> Self {
-        self.gravity = gravity;
+    pub fn with_acceleration(mut self, frame_start_acceleration: Vec3) -> Self {
+        self.acceleration = frame_start_acceleration;
         self
     }
 
-    pub fn with_frame_start_acceleration(mut self, frame_start_acceleration: Vec3) -> Self {
-        self.frame_start_acceleration = frame_start_acceleration;
-        self
-    }
-
-    pub fn with_frame_start_angular_acceleration(
-        mut self,
-        frame_start_angular_acceleration: Vec3,
-    ) -> Self {
-        self.frame_start_angular_acceleration = frame_start_angular_acceleration;
+    pub fn with_angular_acceleration(mut self, frame_start_angular_acceleration: Vec3) -> Self {
+        self.angular_acceleration = frame_start_angular_acceleration;
         self
     }
 
@@ -189,13 +181,12 @@ impl RigidBody {
     /// linear approximation to the correct integral. For this reason it
     /// may be inaccurate in some cases.
     pub fn integrate(&mut self, duration: Real) {
-        self.apply_gravity();
+        self.last_frame_acceleration = self.acceleration + self.force_accum * self.inverse_mass;
+        let angular_acceleration =
+            self.angular_acceleration + self.inverse_inertia_tensor_world * self.torque_accum;
 
-        let acceleration = self.frame_start_acceleration + self.force_accum * self.inverse_mass;
-        let angular_acceleration = self.frame_start_angular_acceleration
-            + self.inverse_inertia_tensor_world * self.torque_accum;
-
-        self.velocity = self.velocity * self.damping.powf(duration) + acceleration * duration;
+        self.velocity =
+            self.velocity * self.damping.powf(duration) + self.last_frame_acceleration * duration;
         self.angular_velocity = self.angular_velocity * self.angular_damping.powf(duration)
             + angular_acceleration * duration;
 
@@ -207,6 +198,10 @@ impl RigidBody {
         self.update_derived_data();
 
         self.clear_accumelators();
+    }
+
+    pub fn transform_matrix(&self) -> Mat4 {
+        self.transform_matrix
     }
 
     /// Adds the given force to centre of mass of the rigid body.
@@ -232,7 +227,7 @@ impl RigidBody {
     /// but the application point is given in body space. This is
     /// useful for spring forces, or other forces fixed to the body.
     pub fn add_force_at_body_point(&mut self, force: Vec3, point: Vec3) {
-        let point = self.get_point_in_world_space(point);
+        let point = local_to_world(point, self.transform_matrix);
         self.add_force_at_point(force, point);
     }
 
@@ -258,25 +253,17 @@ impl RigidBody {
         );
     }
 
-    pub fn get_point_in_world_space(&self, point: Vec3) -> Vec3 {
-        self.transform_matrix.transform(point)
-    }
-
     pub fn get_point_in_local_space(&self, point: Vec3) -> Vec3 {
         self.transform_matrix.transform_inverse(point)
+    }
+
+    pub fn get_point_in_world_space(&self, point: Vec3) -> Vec3 {
+        self.transform_matrix.transform(point)
     }
 
     pub(crate) fn clear_accumelators(&mut self) {
         self.force_accum = Vec3::ZERO;
         self.torque_accum = Vec3::ZERO;
-    }
-
-    fn apply_gravity(&mut self) {
-        if !self.has_finite_mass() {
-            return;
-        }
-
-        self.add_force(self.gravity * self.mass());
     }
 }
 
@@ -314,12 +301,12 @@ fn inverse_inertia_tensor_to_world_coords(iit: Mat3, rotmat: Mat4) -> Mat3 {
 }
 
 new_key_type! {
-    pub struct RigidBodyHandle;
+    pub struct RigidBodyId;
 }
 
-#[derive(Debug, Clone, Default, IntoIterator, Index, IndexMut, From, AsRef, AsMut)]
+#[derive(Debug, Clone, Default, IntoIterator, Index, IndexMut, From)]
 pub struct RigidBodySet {
-    inner: SlotMap<RigidBodyHandle, RigidBody>,
+    inner: SlotMap<RigidBodyId, RigidBody>,
 }
 
 impl RigidBodySet {
@@ -335,11 +322,11 @@ impl RigidBodySet {
         }
     }
 
-    pub fn insert(&mut self, value: RigidBody) -> RigidBodyHandle {
+    pub fn insert(&mut self, value: RigidBody) -> RigidBodyId {
         self.inner.insert(value)
     }
 
-    pub fn remove(&mut self, key: RigidBodyHandle) -> Option<RigidBody> {
+    pub fn remove(&mut self, key: RigidBodyId) -> Option<RigidBody> {
         self.inner.remove(key)
     }
 
@@ -355,11 +342,11 @@ impl RigidBodySet {
         self.inner.is_empty()
     }
 
-    pub fn get(&self, key: RigidBodyHandle) -> Option<&RigidBody> {
+    pub fn get(&self, key: RigidBodyId) -> Option<&RigidBody> {
         self.inner.get(key)
     }
 
-    pub fn get_mut(&mut self, key: RigidBodyHandle) -> Option<&mut RigidBody> {
+    pub fn get_mut(&mut self, key: RigidBodyId) -> Option<&mut RigidBody> {
         self.inner.get_mut(key)
     }
 
@@ -375,18 +362,18 @@ impl RigidBodySet {
         self.inner.values_mut()
     }
 
-    pub fn handles(&self) -> impl Iterator<Item = RigidBodyHandle> + '_ {
+    pub fn handles(&self) -> impl Iterator<Item = RigidBodyId> + '_ {
         self.inner.keys()
     }
 
     pub fn get_disjoint_mut<const N: usize>(
         &mut self,
-        keys: [RigidBodyHandle; N],
+        keys: [RigidBodyId; N],
     ) -> Option<[&mut RigidBody; N]> {
         self.inner.get_disjoint_mut(keys)
     }
 
-    pub fn contains(&self, key: RigidBodyHandle) -> bool {
+    pub fn contains(&self, key: RigidBodyId) -> bool {
         self.inner.contains_key(key)
     }
 
@@ -394,15 +381,15 @@ impl RigidBodySet {
         self.inner.reserve(additional)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (RigidBodyHandle, &RigidBody)> {
+    pub fn iter(&self) -> impl Iterator<Item = (RigidBodyId, &RigidBody)> {
         self.inner.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (RigidBodyHandle, &mut RigidBody)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (RigidBodyId, &mut RigidBody)> {
         self.inner.iter_mut()
     }
 
-    pub fn drain(&mut self) -> impl Iterator<Item = (RigidBodyHandle, RigidBody)> + '_ {
+    pub fn drain(&mut self) -> impl Iterator<Item = (RigidBodyId, RigidBody)> + '_ {
         self.inner.drain()
     }
 }

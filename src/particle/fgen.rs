@@ -1,19 +1,91 @@
+use derive_more::{From, Index, IndexMut, IntoIterator};
+use downcast_rs::{impl_downcast, Downcast};
+use slotmap::{new_key_type, SlotMap};
+
+use super::{ParticleId, ParticleSet};
 use crate::{precision::Real, Vec3};
-use std::collections::HashSet;
 
-use super::{Particle, ParticleHandle, ParticleSet};
-
-pub trait ParticleForceGenerator {
+pub trait ParticleForceGenerator: Downcast {
     fn update_forces(&self, particles: &mut ParticleSet, duration: Real);
 }
 
-pub trait ParticleTargetedForceGenerator {
-    fn update_force(&self, target: &mut Particle, duration: Real);
+new_key_type! {
+    pub struct ForceGeneratorId;
 }
 
+#[derive(Default, IntoIterator, Index, IndexMut, From)]
+pub struct ParticleForceGeneratorSet {
+    inner: SlotMap<ForceGeneratorId, Box<dyn ParticleForceGenerator>>,
+}
+
+impl_downcast!(ParticleForceGenerator);
+
+impl ParticleForceGeneratorSet {
+    pub fn new() -> Self {
+        Self {
+            inner: SlotMap::with_key(),
+        }
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: SlotMap::with_capacity_and_key(capacity),
+        }
+    }
+
+    pub fn update_forces(&self, particles: &mut ParticleSet, duration: Real) {
+        for generator in self.inner.values() {
+            generator.update_forces(particles, duration);
+        }
+    }
+
+    pub fn insert<F: ParticleForceGenerator + 'static>(&mut self, value: F) -> ForceGeneratorId {
+        self.inner.insert(Box::new(value))
+    }
+
+    pub fn delete(&mut self, key: ForceGeneratorId) {
+        self.inner.remove(key);
+    }
+
+    pub fn remove<F: ParticleForceGenerator>(&mut self, key: ForceGeneratorId) -> Option<Box<F>> {
+        self.inner.remove(key)?.downcast().ok()
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear()
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn get<F: ParticleForceGenerator>(&self, key: ForceGeneratorId) -> Option<&F> {
+        self.inner.get(key)?.downcast_ref()
+    }
+
+    pub fn get_mut<F: ParticleForceGenerator>(&mut self, key: ForceGeneratorId) -> Option<&mut F> {
+        self.inner.get_mut(key)?.downcast_mut()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    pub fn contains(&self, key: ForceGeneratorId) -> bool {
+        self.inner.contains_key(key)
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.inner.reserve(additional)
+    }
+}
 pub struct ParticleSpring {
-    pub target: ParticleHandle,
-    pub other: ParticleHandle,
+    pub target: ParticleId,
+    pub other: ParticleId,
     pub spring_constant: Real,
     pub rest_length: Real,
 }
@@ -35,7 +107,7 @@ impl ParticleForceGenerator for ParticleSpring {
 }
 
 pub struct ParticleAnchoredSpring {
-    pub target: ParticleHandle,
+    pub target: ParticleId,
     pub anchor: Vec3,
     pub spring_constant: Real,
     pub rest_length: Real,
@@ -54,8 +126,8 @@ impl ParticleForceGenerator for ParticleAnchoredSpring {
 }
 
 pub struct ParticleBungee {
-    pub target: ParticleHandle,
-    pub other: ParticleHandle,
+    pub target: ParticleId,
+    pub other: ParticleId,
     pub spring_constant: Real,
     pub rest_length: Real,
 }
@@ -83,7 +155,7 @@ impl ParticleForceGenerator for ParticleBungee {
 }
 
 pub struct ParticleBuoyancy {
-    pub target: ParticleHandle,
+    pub target: ParticleId,
     pub max_depth: Real,
     pub volume: Real,
     pub liquid_height: Real,
@@ -91,7 +163,7 @@ pub struct ParticleBuoyancy {
 }
 
 impl ParticleBuoyancy {
-    pub fn new(target: ParticleHandle, max_depth: Real, volume: Real, liquid_height: Real) -> Self {
+    pub fn new(target: ParticleId, max_depth: Real, volume: Real, liquid_height: Real) -> Self {
         Self {
             target,
             max_depth,
@@ -125,60 +197,5 @@ impl ParticleForceGenerator for ParticleBuoyancy {
         };
 
         particle.add_force(Vec3::Y * buoyancy_force);
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ForceTargetSet<T: ParticleTargetedForceGenerator> {
-    generator: T,
-    targets: HashSet<ParticleHandle>,
-}
-
-impl<T: ParticleTargetedForceGenerator> ForceTargetSet<T> {
-    pub fn new(generator: T) -> Self {
-        Self {
-            generator,
-            targets: HashSet::new(),
-        }
-    }
-
-    pub fn with_target_capacity(generator: T, capacity: usize) -> Self {
-        Self {
-            generator,
-            targets: HashSet::with_capacity(capacity),
-        }
-    }
-
-    pub fn add_target(&mut self, particle: ParticleHandle) -> bool {
-        self.targets.insert(particle)
-    }
-
-    pub fn remove_target(&mut self, particle: ParticleHandle) -> bool {
-        self.targets.remove(&particle)
-    }
-
-    pub fn clear_targets(&mut self) {
-        self.targets.clear()
-    }
-
-    pub fn targets_len(&self) -> usize {
-        self.targets.len()
-    }
-
-    pub fn has_target(&self) -> bool {
-        todo!()
-    }
-
-    pub fn targets(&self) -> impl Iterator<Item = &ParticleHandle> {
-        self.targets.iter()
-    }
-}
-
-impl<T: ParticleTargetedForceGenerator> ParticleForceGenerator for ForceTargetSet<T> {
-    fn update_forces(&self, particles: &mut ParticleSet, duration: Real) {
-        for target in self.targets.iter().copied() {
-            self.generator
-                .update_force(&mut particles[target], duration)
-        }
     }
 }
