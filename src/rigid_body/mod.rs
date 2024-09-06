@@ -7,7 +7,7 @@ use slotmap::{new_key_type, SlotMap};
 
 use derive_more::{From, Index, IndexMut, IntoIterator};
 
-use crate::{math::local_to_world, precision::Real, Mat3, Mat4, Quat, Vec3};
+use crate::{precision::Real, Mat3, Mat4, Quat, Vec3};
 
 /// A rigid body is the basic simulation object in the physics
 /// core.
@@ -32,10 +32,6 @@ pub struct RigidBody {
     /// used to add a constant acceleration to the acceleration
     /// computed from forces at each frame
     pub acceleration: Vec3,
-    /// used to add a constant angular acceleration to the angular acceleration
-    /// computed from torques at each frame
-    pub angular_acceleration: Vec3,
-
     /// Holds the inverse of the body’s inertia tensor. The
     /// intertia tensor provided must not be degenerate
     /// (that would mean the body had zero inertia for
@@ -79,7 +75,6 @@ impl RigidBody {
             velocity: Vec3::ZERO,
             angular_velocity: Vec3::ZERO,
             acceleration: Vec3::ZERO,
-            angular_acceleration: Vec3::ZERO,
             inverse_inertia_tensor: Mat3::IDENTITY,
             transform_matrix: Mat4::IDENTITY,
             inverse_inertia_tensor_world: Mat3::IDENTITY,
@@ -140,11 +135,6 @@ impl RigidBody {
         self
     }
 
-    pub fn with_angular_acceleration(mut self, frame_start_angular_acceleration: Vec3) -> Self {
-        self.angular_acceleration = frame_start_angular_acceleration;
-        self
-    }
-
     //NOTE: why >= and not >? doesn't inverse_mass being zero mean that the objects mass
     // is infinite?
     pub fn has_finite_mass(&self) -> bool {
@@ -182,8 +172,9 @@ impl RigidBody {
     /// may be inaccurate in some cases.
     pub fn integrate(&mut self, duration: Real) {
         self.last_frame_acceleration = self.acceleration + self.force_accum * self.inverse_mass;
-        let angular_acceleration =
-            self.angular_acceleration + self.inverse_inertia_tensor_world * self.torque_accum;
+        let angular_acceleration = self
+            .inverse_inertia_tensor_world
+            .transform(self.torque_accum);
 
         self.velocity =
             self.velocity * self.damping.powf(duration) + self.last_frame_acceleration * duration;
@@ -216,9 +207,9 @@ impl RigidBody {
     /// Because the force is not applied at the centre of mass, it may be split
     /// into both a force and torque.
     pub fn add_force_at_point(&mut self, force: Vec3, point: Vec3) {
-        let from_center_of_mass = point - self.position;
+        let arm = point - self.position;
         self.force_accum += force;
-        self.torque_accum += from_center_of_mass.cross(force);
+        self.torque_accum += arm.cross(force);
         self.is_awake = true;
     }
 
@@ -227,7 +218,7 @@ impl RigidBody {
     /// but the application point is given in body space. This is
     /// useful for spring forces, or other forces fixed to the body.
     pub fn add_force_at_body_point(&mut self, force: Vec3, point: Vec3) {
-        let point = local_to_world(point, self.transform_matrix);
+        let point = self.get_point_in_world_space(point);
         self.add_force_at_point(force, point);
     }
 
@@ -246,7 +237,8 @@ impl RigidBody {
     pub fn update_derived_data(&mut self) {
         self.orientation = self.orientation.normalized();
 
-        self.transform_matrix = Mat4::from_orientation_and_pos(self.orientation, self.position);
+        self.transform_matrix =
+            Mat4::from_orientation_and_position(self.orientation, self.position);
         self.inverse_inertia_tensor = inverse_inertia_tensor_to_world_coords(
             self.inverse_inertia_tensor,
             self.transform_matrix,
