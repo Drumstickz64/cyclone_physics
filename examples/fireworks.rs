@@ -31,7 +31,6 @@ async fn main() {
     loop {
         for key in get_keys_down().iter() {
             match key {
-                KeyCode::M => println!("<{}, {}>", screen_width(), screen_height()),
                 KeyCode::Key0 => create_firework(
                     &mut state,
                     &rules[MAIN_RULES[gen_range(0, MAIN_RULES.len())]],

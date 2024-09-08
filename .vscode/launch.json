@@ -1,135 +1,192 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in library 'cyclone_physics'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=cyclone_physics"
-                ],
-                "filter": {
-                    "name": "cyclone_physics",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug example 'ballistics'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=ballistics",
-                    "--package=cyclone_physics"
-                ],
-                "filter": {
-                    "name": "ballistics",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'ballistics'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=ballistics",
-                    "--package=cyclone_physics"
-                ],
-                "filter": {
-                    "name": "ballistics",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug example 'fireworks'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=fireworks",
-                    "--package=cyclone_physics"
-                ],
-                "filter": {
-                    "name": "fireworks",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'fireworks'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=fireworks",
-                    "--package=cyclone_physics"
-                ],
-                "filter": {
-                    "name": "fireworks",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug example 'springs'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--example=springs",
-                    "--package=cyclone_physics"
-                ],
-                "filter": {
-                    "name": "springs",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in example 'springs'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--example=springs",
-                    "--package=cyclone_physics"
-                ],
-                "filter": {
-                    "name": "springs",
-                    "kind": "example"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'cyclone_physics'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=cyclone-physics"],
+        "filter": {
+          "name": "cyclone_physics",
+          "kind": "lib"
         }
-    ]
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'ballistics'",
+      "cargo": {
+        "args": ["build", "--example=ballistics", "--package=cyclone-physics"],
+        "filter": {
+          "name": "ballistics",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'ballistics'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=ballistics",
+          "--package=cyclone-physics"
+        ],
+        "filter": {
+          "name": "ballistics",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'collision_broad'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=collision_broad",
+          "--package=cyclone-physics"
+        ],
+        "filter": {
+          "name": "collision_broad",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'collision_broad'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=collision_broad",
+          "--package=cyclone-physics"
+        ],
+        "filter": {
+          "name": "collision_broad",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'fireworks'",
+      "cargo": {
+        "args": ["build", "--example=fireworks", "--package=cyclone-physics"],
+        "filter": {
+          "name": "fireworks",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'fireworks'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=fireworks",
+          "--package=cyclone-physics"
+        ],
+        "filter": {
+          "name": "fireworks",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'rigid_body_dynamics'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=rigid_body_dynamics",
+          "--package=cyclone-physics"
+        ],
+        "filter": {
+          "name": "rigid_body_dynamics",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'rigid_body_dynamics'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=rigid_body_dynamics",
+          "--package=cyclone-physics"
+        ],
+        "filter": {
+          "name": "rigid_body_dynamics",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'springs'",
+      "cargo": {
+        "args": ["build", "--example=springs", "--package=cyclone-physics"],
+        "filter": {
+          "name": "springs",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'springs'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=springs",
+          "--package=cyclone-physics"
+        ],
+        "filter": {
+          "name": "springs",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
 }
