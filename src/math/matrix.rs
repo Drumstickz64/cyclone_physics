@@ -371,6 +371,32 @@ impl Mat4 {
             - self.data[4] * self.data[1] * self.data[10]
             + self.data[0] * self.data[5] * self.data[10]
     }
+
+    #[inline]
+    pub fn get_axis_vector(&self, i: usize) -> Vec3 {
+        debug_assert!(i < 4, "A Mat4 only has 4 axes");
+        Vec3::new(self.data[i], self.data[i + 4], self.data[i + 8])
+    }
+
+    #[inline]
+    pub fn get_x_axis(&self) -> Vec3 {
+        self.get_axis_vector(0)
+    }
+
+    #[inline]
+    pub fn get_y_axis(&self) -> Vec3 {
+        self.get_axis_vector(1)
+    }
+
+    #[inline]
+    pub fn get_z_axis(&self) -> Vec3 {
+        self.get_axis_vector(2)
+    }
+
+    #[inline]
+    pub fn get_position(&self) -> Vec3 {
+        self.get_axis_vector(3)
+    }
 }
 
 impl Mul<Vec3> for Mat4 {

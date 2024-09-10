@@ -1,6 +1,6 @@
 use std::{
     fmt,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 use crate::precision::Real;
@@ -54,6 +54,12 @@ impl Vec3 {
         self / sq_mag.sqrt()
     }
 
+    #[inline]
+    #[must_use]
+    pub fn is_normalized(self) -> bool {
+        (self.squared_magnitude() - 1.0).abs() <= 2e-4
+    }
+
     #[inline(always)]
     pub fn distance_to(self, other: Self) -> Real {
         (other - self).magnitude()
@@ -81,6 +87,15 @@ impl Vec3 {
             self.z * rhs.x - self.x * rhs.z,
             self.x * rhs.y - self.y * rhs.x,
         )
+    }
+
+    #[inline(always)]
+    pub fn clamp(self, min: Self, max: Self) -> Self {
+        Self {
+            x: self.x.clamp(min.x, max.x),
+            y: self.y.clamp(min.y, max.y),
+            z: self.z.clamp(min.z, max.z),
+        }
     }
 
     #[inline(always)]
@@ -197,5 +212,29 @@ impl fmt::Display for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Vec3 { x, y, z } = *self;
         write!(f, "< {x}, {y}, {z} >")
+    }
+}
+
+impl Index<usize> for Vec3 {
+    type Output = Real;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            index => panic!("index out of bounds, index is {index}, len is 3"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            index => panic!("index out of bounds, index is {index}, len is 3"),
+        }
     }
 }

@@ -1,4 +1,5 @@
 pub mod collide_broad;
+pub mod collide_narrow;
 pub mod fgen;
 mod system;
 
